@@ -19,4 +19,5 @@ cat /global/scratch/users/chandlersutherland/e14/bs_fastq_files/williams/SRR1728
 #trim the two pooled biological reps 
 trim_input="/global/scratch/users/chandlersutherland/e14/bs_fastq_files/williams_pooled"
 trim_output="/global/scratch/users/chandlersutherland/e14/trim_williams/pooled"
-bash trim_galore.sh trim_input=$trim_input,trim_output=$trim_output
+
+sbatch --job-name=bio_reps.trim_galore --export=trim_input=$trim_input,trim_output=$trim_output /global/home/users/chandlersutherland/nlr_features/methylation/trim_galore.sh
