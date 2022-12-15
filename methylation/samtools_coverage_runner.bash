@@ -11,14 +11,14 @@
 
 #this script passes a bam file to the python script samtools_coverage, which outputs a file $BASENAME_clean_coverage.tsv which gives the mean depth over the NLRs
 #can easily be made into a for loop to pass multiple files through 
-#pass variable INPUT, which should have a directory of sam files ready for coverage processing 
+#pass variable coverage_input, which should have a directory of sam files ready for coverage processing 
 
 module load python
 module load samtools/1.14
 #very important to have this version 
 
-cd $1
-mkdir -p $1/sort_index
+cd $coverage_input
+mkdir -p $coverage_input/sort_index
 
 for file in *.sam
 do 
@@ -27,10 +27,10 @@ do
 	#first, convert to bam, sort and index for samtools coverage to run appropriately 
 	samtools view -@ $SLURM_NTASKS -b $file |\
 	samtools sort -@ 20 - -o $1/sort_index/${BASENAME}.bam
-	samtools index $1/sort_index/${BASENAME}.bam
+	samtools index $coverage_input/sort_index/${BASENAME}.bam
 done 
 
-cd $1/sort_index/
+cd $coverage_input/sort_index/
 
 for file in *.bam 
 do 
@@ -39,22 +39,6 @@ do
 done 
 
 #clean up working directory 
-mkdir -p $1/coverage
+mkdir -p $coverage_input/coverage
 mv *_clean_coverage.tsv $1/coverage
 rm *coverage.tsv 
-
-#fun fun python?
-
-
-mkdir -p $1/NLR_bam 
-#filter bam file by just NLRs, sort and index for IGV  
-cd $1/sort_index/
-#untested 
-for file in *.bam
-do 
-	BASENAME=$(basename ${file} .bam)
-	samtools view -b -h -L $HOME/e14/data/all_NLR.bed $file |\
-	samtools sort -@ 20 - -o $1/NLR_bam/${BASENAME}_NLRs.bam 
-	samtools index $1/NLR_bam/${BASENAME}_NLRs.bam
-	
-done 

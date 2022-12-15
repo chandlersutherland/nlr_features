@@ -19,13 +19,12 @@ module load samtools
 cd $trim_output
 
 #for each sample, write the mates to a csv file 
-samples=$(basename -s _1_trimmed.fq  *_1*.fq)
-echo $samples
+rm mates*
 
 touch mates_1.csv 
 touch mates_2.csv 
 
-for sample in $samples 
+for sample in  ${samples[@]} 
 do 
 	echo -n $trim_output/${sample}_1_trimmed.fq, >> mates_1.csv 
 	echo -n $trim_output/${sample}_2_trimmed.fq, >> mates_2.csv
