@@ -20,4 +20,10 @@ cat /global/scratch/users/chandlersutherland/e14/bs_fastq_files/williams/SRR1728
 trim_input="/global/scratch/users/chandlersutherland/e14/bs_fastq_files/williams_pooled"
 trim_output="/global/scratch/users/chandlersutherland/e14/trim_williams/pooled"
 
-sbatch --job-name=bio_reps.trim_galore --export=trim_input=$trim_input,trim_output=$trim_output /global/home/users/chandlersutherland/nlr_features/methylation/trim_galore.sh
+sbatch --job-name=bio_reps.trim_galore --export=trim_input=$trim_input,trim_output=$trim_output -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/trim_galore.sh
+
+#run bismark alignment 
+genome="/global/scratch/users/chandlersutherland/phytozome/Athaliana/Araport11/assembly"
+bismark_output="/global/scratch/users/chandlersutherland/e14/bismark/bam_files/pooled"
+
+sbatch --job-name=bio_reps.bismark --export=trim_output=$trim_output,genome=$genome,bismark_output=$bismark_output -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/bismark.sh
