@@ -20,5 +20,3 @@ TRIM_DIR=/global/home/users/chandlersutherland/programs/TrimGalore-0.6.6
 BASENAME=$(basename $sample)
 $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired $trim_input/"${sample}"_1.fastq $trim_input/"${sample}"_2.fastq
 echo "finished trimming ${BASENAME}"
-
-done 
