@@ -19,6 +19,7 @@ echo ${samples[@]}
 #run trim galore in default, paired end mode 
 for f in  ${samples[@]}
 do 
-   $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired $trim_input/"${f}"_1*.fq $trim_input/"${f}"_2*.fq
-   echo "finished trimming ${f}"
+   BASENAME=$(basename $f .fastq)
+   $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired $trim_input/"${f}"_1.fastq $trim_input/"${f}"_2.fastq
+   echo "finished trimming ${BASENAME}"
 done 
