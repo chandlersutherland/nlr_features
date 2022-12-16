@@ -32,6 +32,13 @@ bismark_output="/global/scratch/users/chandlersutherland/e14/bismark/bam_files/p
 #/global/home/users/chandlersutherland/nlr_features/methylation/bismark.bash; done < samples.txt 
 
 #check read coverage of NLRs, generating a clean_coverage.tsv file for each .sam file in the coverage_input directory  
-#untested 12/21 
 coverage_input=$bismark_output
-while read sample; do sbatch --job-name=$sample.nlr_coverage --export=coverage_input=$coverage_input,sample=$sample -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/samtools_coverage_runner.bash; done < samples.txt
+#while read sample; do sbatch --job-name=$sample.nlr_coverage --export=coverage_input=$coverage_input,sample=$sample -A co_minium \
+#/global/home/users/chandlersutherland/nlr_features/methylation/samtools_coverage_runner.bash; done < samples.txt
+
+#deduplicate files + extraction 
+deduplicate_input=$bismark_output
+extraction_output="/global/scratch/users/chandlersutherland/e14/bismark/extraction/pooled"
+
+while read sample; do sbatch --job-name=$sample.dedup --export=deduplicate_input=$deduplicate_input,extraction_output=$extraction_output,sample=$sample -A co_minium \
+/global/home/users/chandlersutherland/nlr_features/methylation/bismark_deduplicate.bash; done < samples.txt

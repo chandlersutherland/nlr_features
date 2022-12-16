@@ -17,21 +17,6 @@ module load samtools
 
 #need to export three variables, trim_output directory, which is our input directory, bismark_output directory, and the genome file 
 cd $trim_output
-
-#for each sample, write the mates to a csv file 
-#rm mates*
-
-#touch mates_1.csv 
-#touch mates_2.csv 
-
-#for sample in ${samples[@]} 
-#do 
-#	echo -n $trim_output/${sample}_1_trimmed.fq, >> mates_1.csv 
-#	echo -n $trim_output/${sample}_2_trimmed.fq, >> mates_2.csv
-#done 
-
-#MATES1=$(cat mates_1.csv)
-#MATES2=$(cat mates_2.csv)
 echo "beginning bismark on sample ${sample}"
 
 bismark --genome $genome \
