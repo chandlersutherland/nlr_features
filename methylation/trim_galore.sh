@@ -15,11 +15,10 @@ module load fastqc
 
 #set the trim directory, output directory, and input directory, containing the untrimmed fastq files
 TRIM_DIR=/global/home/users/chandlersutherland/programs/TrimGalore-0.6.6
-
+echo ${samples[@]}
 #run trim galore in default, paired end mode 
 for f in  ${samples[@]}
 do 
-   BASENAME=$(basename $f .fastq)
-   $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired $trim_input/"${f}"_1.fastq $trim_input/"${f}"_2.fastq
-   echo "finished trimming ${BASENAME}"
+   $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired $trim_input/"${f}"_1*.fq $trim_input/"${f}"_2*.fq
+   echo "finished trimming ${f}"
 done 
