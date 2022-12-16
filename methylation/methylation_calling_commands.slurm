@@ -33,6 +33,5 @@ while read sample; do sbatch --job-name=$sample.bismark --export=trim_output=$tr
 
 #check read coverage of NLRs, generating a clean_coverage.tsv file for each .sam file in the coverage_input directory  
 #untested 12/21 
-#coverage_input=$bismark_output
-#while read sample; do sbatch --job-name=bio_reps.nlr_coverage --export=coverage_input=$coverage_input -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/samtools_coverage_runner.bash
-
+coverage_input=$bismark_output
+while read sample; do sbatch --job-name=$sample.nlr_coverage --export=coverage_input=$coverage_input,sample=$sample -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/samtools_coverage_runner.bash

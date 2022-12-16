@@ -5,6 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
 #SBATCH --mail-user=chandlersutherland@berkeley.edu
+#SBATCH --time=00:20:00
 #SBATCH --mail-type=ALL
 #SBATCH --error=/global/home/users/chandlersutherland/slurm_stderr/slurm-%j.out
 #SBATCH --output=/global/home/users/chandlersutherland/slurm_stdout/slurm-%j.out
@@ -20,25 +21,16 @@ module load samtools/1.14
 cd $coverage_input
 mkdir -p $coverage_input/sort_index
 
-for file in *.sam
-do 
-	BASENAME=$(basename ${file} .sam)
-	echo $BASENAME
-	#first, convert to bam, sort and index for samtools coverage to run appropriately 
-	samtools view -@ $SLURM_NTASKS -b $file |\
-	samtools sort -@ 20 - -o $1/sort_index/${BASENAME}.bam
-	samtools index $coverage_input/sort_index/${BASENAME}.bam
-done 
+#first, convert to bam, sort and index for samtools coverage to run appropriately 
+samtools sort -@ 20 $file -o $coverage_input/sort_index/${sample}.bam ${sample}_1_val_1_bismark_bt2_pe.bam
+samtools index $coverage_input/sort_index/${sample}.bam
 
 cd $coverage_input/sort_index/
 
-for file in *.bam 
-do 
-	#run the coverage file 
-	python $HOME/e14/samtools_coverage.py ${file}
-done 
+#run the coverage file 
+python $HOME/e14/samtools_coverage.py ${sample}.bam 
 
 #clean up working directory 
 mkdir -p $coverage_input/coverage
-mv *_clean_coverage.tsv $1/coverage
+mv *_clean_coverage.tsv $coverage_input/coverage
 rm *coverage.tsv 
