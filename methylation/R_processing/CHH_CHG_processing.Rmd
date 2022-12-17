@@ -1,0 +1,72 @@
+---
+title: "CHG and CHH context"
+author: "Chandler Sutherland"
+date: "2022-12-30"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(ggsignif)
+library(ggpubr)
+```
+
+Goal: investigate any gene body CHH and CHG methylation that may indicate global silencing due to nearby TE elements. 
+```{r}
+#load the per gene methylation averages for each biological replicate
+CHG_1 <- read.csv('C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/e14_R/CHG_per_gene_met_biorep1.tsv', sep='\t', col.names = c('Chrom', 'Gene', 'meth_percentage', 'cg_count'), skip=1)
+
+CHG_2 <- read.csv('C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/e14_R/CHG_per_gene_met_biorep2.tsv', sep='\t', col.names = c('Chrom', 'Gene', 'meth_percentage', 'cg_count'), skip=1)
+
+CHH_1 <- read.csv('C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/e14_R/CHH_per_gene_met_biorep1.tsv', sep='\t', col.names = c('Chrom', 'Gene', 'meth_percentage', 'cg_count'), skip=1)
+
+CHH_2 <- read.csv('C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/e14_R/CHH_per_gene_met_biorep2.tsv', sep='\t', col.names = c('Chrom', 'Gene', 'meth_percentage', 'cg_count'), skip=1)
+
+working_table <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//working_table.xlsx")
+```
+
+```{r}
+#use the clean function to add HV info 
+clean <- function(df) {
+   df2 <- df %>% merge(working_table, by='Gene', all=TRUE)
+  df3 <- df2 %>% mutate(HV=recode(HV, `0` = "non-hv", 
+                                       `1`="hv"))
+  df3$HV[is.na(df3$HV)]<-'all_genes'
+  df3$HV <- factor(df3$HV , levels=c("all_genes", "non-hv", "hv"))
+  df3
+  df4 <- df3 %>% subset(select=c('Gene', 'HV', 'meth_percentage')) %>% filter(!is.na(meth_percentage))
+  df4
+}
+
+#clean the samples, average the CHH and CHG methylation percentage, and combine into one dataframe for processing 
+samples <- list(CHH_1, CHH_2, CHG_1, CHG_2)
+names(samples) <- c('CHH_1', 'CHH_2', 'CHG_1', 'CHG_2')
+clean_samples <- lapply(names(samples), function(x) clean(samples[[x]]))
+
+CHH <- merge(clean_samples[[1]], clean_samples[[2]], by='Gene') 
+CHH$CHH_mean <- rowMeans(CHH[, c(3,5)], na.rm=TRUE)
+CHH <- CHH %>% subset(select=c('Gene', 'CHH_mean', 'HV.x'))
+
+CHG <- merge(clean_samples[[3]], clean_samples[[4]], by='Gene') 
+CHG$CHG_mean <- rowMeans(CHG[, c(3,5)], na.rm=TRUE)
+CHG <- CHG %>% subset(select=c('Gene', 'CHG_mean', 'HV.y'))
+
+conglom <- merge(CHH, CHG, by='Gene')
+```
+
+
+```{r}
+#check the outlier genes 
+conglom %>% filter(Gene %in% c('AT5G46510', 'AT4G16860', 'AT1G58602', 'AT4G16890'))
+
+#check the overall CHH CHG means and medians 
+conglom %>% group_by(HV.x) %>% summarize(CHH_mean = mean(CHH_mean), CHG_mean=mean(CHG_mean), CHH_median=median(CHH_mean), CHG_median=median(CHG_mean))
+```
+
+Looks like there may be a subtle CHG signal? Is it significant though?
+```{r}
+compare_means(CHG_mean~HV.x, conglom, method='t.test', paired=FALSE)
+compare_means(CHH_mean~HV.x, conglom, method='t.test', paired=FALSE)
+```
+Nope, not significant.
