@@ -4,7 +4,7 @@
 #SBATCH --qos=minium_htc4_normal
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
-#SBATCH --time=01:00:00
+#SBATCH --time=00:01:00
 #SBATCH --mail-user=chandlersutherland@berkeley.edu
 #SBATCH --mail-type=ALL
 #SBATCH --error=/global/home/users/chandlersutherland/slurm_stderr/slurm-%j.out
@@ -40,5 +40,9 @@ coverage_input=$bismark_output
 deduplicate_input=$bismark_output
 extraction_output="/global/scratch/users/chandlersutherland/e14/bismark/extraction/pooled"
 
-while read sample; do sbatch --job-name=$sample.dedup --export=deduplicate_input=$deduplicate_input,extraction_output=$extraction_output,sample=$sample -A co_minium \
-/global/home/users/chandlersutherland/nlr_features/methylation/bismark_deduplicate.bash; done < samples.txt
+#while read sample; do sbatch --job-name=$sample.dedup --export=deduplicate_input=$deduplicate_input,extraction_output=$extraction_output,sample=$sample -A co_minium \
+#/global/home/users/chandlersutherland/nlr_features/methylation/bismark_deduplicate.bash; done < samples.txt
+
+#finish extraction to coverage files, and filter to >5 reads per cytosine 
+while read sample; do sbatch --job-name=$sample.extract --export=extraction_output=$extraction_output,sample=$sample\
+-A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/bismark_2_bedgraph.bash; done < samples.txt
