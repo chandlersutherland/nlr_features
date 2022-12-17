@@ -14,11 +14,13 @@ methylation = pd.read_csv(cov_file, skiprows=1, sep = '\t', names=['Chrom', 'sta
 filename=cov_file.split('/')[-1]
 context=filename.split('_')[0]
 sample=filename.split('_')[2].split('.')[0]
+print(filename+' loaded successfully')
 
 #initialize output directory (same as input directory)
 f=len(cov_file.split('/'))
 b=cov_file.split('/')[0:f-1]
 out_dir='/'.join(b)
+print('Output directory is '+out_dir)
 
 #input necessary gene name files variables (bed files, chromosomes)
 #second passed argument should be the bed file for the entire genome
@@ -28,6 +30,7 @@ all_positions = pd.read_csv(pos_file, sep = '\t',header=0, names=['Chrom', 'star
 
 #step 1: filter out ChrC and ChrM, since we don't care about them 
 met=methylation.loc[(methylation['Chrom']!='ChrC') & (methylation['Chrom']!='ChrM')] 
+print('Filtering out ChrC and ChrM...')
 
 #step 2: Average the symmetrical CG pairs since they are not independent 
 def cg_average(df):
@@ -45,9 +48,9 @@ def cg_average(df):
              'meth_percentage':np.mean([cpg_cov.iloc[i,3], 
                                                 cpg_cov.iloc[i+1,3]])
                                                 }
-      avg_cpg.append(obj)    
-    else: 
-      continue
+      avg_cpg.append(obj)
+      else: 
+        continue
     
   avg_cpg_df = pd.DataFrame.from_dict(avg_cpg)
   return avg_cpg_df
@@ -55,6 +58,9 @@ def cg_average(df):
 if context=='CpG':
     print('CpG context detected, averaging symmetrical positions')
     met=cg_average(met)
+    else: 
+        print('CHH or CHG context, no averaging necessary')
+        
 
 #step 3: assign cytosines to genes. Define a few functions first 
 
@@ -100,7 +106,11 @@ def merge(df, pos_chroms):
 
 pos_chroms = break_chroms(all_positions, chroms)  
 all_gene_count=merge(met,pos_chroms) 
+print('Gene names assigned')
 
 #step 4: save file to a tsv 
 #untested
 all_gene_count.to_csv(out_dir+'/'+context+'_per_gene_met_'+sample+'.tsv', sep='\t', header=True, index=False)
+print('Gene counts saved to '+out_dir+'/'+context+'_per_gene_met_'+sample+'.tsv')
+
+print('Finished with '+sample+' in the '+context+' context!!')
