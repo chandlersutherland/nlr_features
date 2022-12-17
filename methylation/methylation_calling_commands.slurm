@@ -44,5 +44,12 @@ extraction_output="/global/scratch/users/chandlersutherland/e14/bismark/extracti
 #/global/home/users/chandlersutherland/nlr_features/methylation/bismark_deduplicate.bash; done < samples.txt
 
 #finish extraction to coverage files, and filter to >5 reads per cytosine 
-while read sample; do sbatch --job-name=$sample.extract --export=extraction_output=$extraction_output,sample=$sample\
- -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/bismark_2_bedgraph.bash; done < samples.txt
+#while read sample; do sbatch --job-name=$sample.extract --export=extraction_output=$extraction_output,sample=$sample\
+# -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/bismark_2_bedgraph.bash; done < samples.txt
+
+#calculate the per gene methylation percentage for each context 
+cov_dir='/global/scratch/users/chandlersutherland/e14/bismark/extraction/pooled/bedGraph_highcov'
+gene_positions='/global/home/users/chandlersutherland/e14/data/Atha_genes.bed'
+
+while read sample; do sbatch --job-name=$sample.per_gene_meth --export=cov_dir=$cov_dir,sample=$sample,gene_positions=$gene_positions -A co_minium \
+/global/home/users/chandlersutherland/nlr_features/methylation/per_gene_methylation_runner.bash; done < samples.txt 
