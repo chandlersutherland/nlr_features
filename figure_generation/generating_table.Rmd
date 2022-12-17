@@ -1,0 +1,446 @@
+---
+title: "generating_table"
+author: "Chandler Sutherland"
+date: '2022-08-25'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(openxlsx)
+library(ggsignif)
+library(ggpubr)
+```
+
+
+Read in the excel files 
+```{r}
+#load in hv file and chae clustering file 
+chae <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\chae_2020_supplemental.xlsx")
+
+hvNLR <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\hvNLR.xlsx")
+
+#drop duplicate for different transcripts 
+hvNLR_gene <- hvNLR[c('Gene', 'HV')] %>% unique()
+
+#merge, keep everything 
+table <- merge(hvNLR_gene, chae, by.x='Gene', by.y='gene', all = TRUE)
+table %>% filter(is.na(HV))
+```
+```{r}
+no_hv <- sum(is.na(table$HV))
+no_cluster <- sum(is.na(table$chrom))
+
+paste("There are ", no_hv, "genes that Chae annotated that do not have hv/nonhv calls, and ", no_cluster, "gene that was present in the hv/nonhv and not the clustering.")
+```
+What are these 40 genes? 
+
+Chae methods: all isoforms of 164 NLRs annotated in the reference accession Col-0 (isoforms being different transcipts of the same gene)
+
+Daniil methods: Amino acids searched for NB-ARC domain using hmmsearch and the custom HMM, potentially more sensitive, missing 40 or so genes. 
+
+```{r}
+table <- table %>% filter(!is.na(HV))
+table %>% filter(is.na(chrom))
+
+#I do want to fill in information about AT4G19050
+#From phytozome: chr4, start 10439983, end 10444121, reverse 
+#cluster? TNL/CNL status?
+#according to Daniil's phylo, looks to be CNL 
+#I can assign cluster status i guess using the neighbor pipeline ughhhh
+#from IGV can reasonably confidently assign singleton status 
+#table[102,]
+index <- which(table$Gene == 'AT4G19050')
+table[index, 3] = 'Chr4'
+table[index, 4] = '10439983'
+table[index, 5] = '10444121'
+table[index, 6] = '-'
+table[index, 7] = 'singleton'
+table[index, 18] = 'C' 
+
+no_cluster <- sum(is.na(table$chrom))
+
+paste('After manual addition, there are', no_cluster, 'genes without clustering info')
+```
+
+
+```{r}
+table
+table$HV %>% sum()
+write.xlsx(table, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\working_table.xlsx')
+```
+
+```{r}
+#combine hv and nonhv into the gene name, just add 0 for non or 1 for hv 
+#this is maybe not the best way to go about this, may have to make two separate files but like easy enough
+bed <- just_hv[,1:6] %>% unite('name', Gene:HV)
+bed <- bed[,c(2, 3, 4, 1, 5)]
+
+write_tsv(bed, 
+          'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_NLR.bed',
+          col_names=FALSE)
+```
+
+
+```{r}
+nonhv <- bed %>% filter(grepl('_0', name))
+hv <- bed %>% filter(grepl('_1', name))
+
+write_tsv(nonhv, 
+          'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\nonhv_NLR.bed',
+          col_names=FALSE)
+
+write_tsv(hv, 
+          'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\hv_NLR.bed',
+          col_names=FALSE)
+```
+
+```{r}
+#remove rpp4 from the bed files to see if it cleans up the profile plots 
+
+no_rpp4 <- just_hv %>%filter(cluster != 'DM8_RPP4-5') 
+no_rpp4 <- no_rpp4[,1:6]%>% unite('name', Gene:HV)
+
+no_rpp4_bed <- no_rpp4[,c(2, 3, 4, 1, 5)]
+
+nonhv_norpp4 <- no_rpp4_bed %>% filter(grepl('_0', name))
+hv_norpp4 <- no_rpp4_bed %>% filter(grepl('_1', name))
+
+write_tsv(nonhv_norpp4, 
+          'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\nonhv_norpp4.bed',
+          col_names=FALSE)
+
+write_tsv(hv_norpp4, 
+          'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\hv_norpp4.bed',
+          col_names=FALSE)
+```
+
+Let's make our own table!
+Data: per gene average % CpG methylation, TPM, distance to TE  
+```{r}
+working_table <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//working_table.xlsx")
+
+HV_count <- sum(working_table$HV == 1)
+nHV_count <- sum(working_table$HV == 0)
+
+paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " non-HV genes in my working table.")
+
+working_table 
+```
+
+
+```{r}
+#per gene average % CpG methylation 
+dif_mean <- readxl::read_xlsx(path = "C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//high_cov_cpg_90 (1).xlsx")
+
+dif_merge <- merge(dif_mean, working_table, by=c('Gene', 'HV'), all=TRUE) %>%
+    group_by(Gene, chrom, start, end, HV, Nterm, cluster_type, cluster)%>%
+    summarize(mean_percent_methylation=mean(mean_meth_percentage))
+
+dif_merge
+
+HV_count <- sum(dif_merge$HV == 1)
+nHV_count <- sum(dif_merge$HV == 0)
+
+paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " non-HV genes in my methylation table.")
+
+na_count <- is.na(dif_merge$mean_percent_methylation) %>% sum()
+dif_merge %>% filter(mean_percent_methylation %>% is.na())
+```
+
+
+```{r}
+#TPM 
+TPM <- read.table("tpm_matrix.csv", header=TRUE, sep=",", row.names=2)%>% dplyr::select(-X)
+TPM_df <- TPM %>% mutate('mean' = rowMeans(TPM[1:4])) 
+all_expression <- merge(TPM_df, dif_merge, by.x=0, by.y='Gene', all.y=TRUE)
+all_expression <- all_expression %>% mutate(log2_TPM = log2(all_expression$mean+1))
+#have to manually set the unmappable genes, since they just look like 0 
+unmappable <- c('AT1G58807', 'AT1G58848', 'AT1G59124', 'AT1G59218')
+
+all_expression$log2_TPM[all_expression$Row.names %in% unmappable] <- NA   
+all_expression$mean[all_expression$Row.names %in% unmappable] <- NA 
+```
+
+
+```{r}
+#TE distance
+# I think I'm losing some genes here, go back and figure out which eventually 
+TE_table <- read.table(file='NLR_TE_dist.tsv', header=1) %>% distinct()
+TE <- merge(TE_table, all_expression, by.x = 'gene', by.y='Row.names', all=TRUE)
+
+na_count <- is.na(TE$te_dist) %>% sum()
+missing_gene <- TE %>% filter(te_dist %>% is.na()) %>% pull(1)
+
+#paste("One gene doesn't have TE distance information, ", missing_gene, ' which does not have a common name' )
+```
+
+
+```{r}
+#clean and concentrate 
+table <- TE[-which(names(TE) %in% c('SRR17281235', 'SRR17281234', 'SRR17281233', 'SRR17281236'))]
+table$log2_TPM <- table$log2_TPM %>% as.numeric()
+
+HV_count <- sum(table$HV == 'hv')
+nHV_count <- sum(table$HV == 'non-hv')
+```
+
+Alright, let's make a neighbor column 
+positive controls: everything in rpp4, favorite neighbors (AT5G38340, AT5G38350) (AT5G46490, AT5G46510)
+A "neighbor" is any hv NLR that has a non-hvNLR within say 2000 bp, and vice versa 
+```{r}
+#Adapted from Daniil's code for TE distance: 
+table$start <- table$start %>% as.numeric()
+table$end <- table$end %>% as.numeric()
+just_HV <- table %>% filter(HV==1)
+just_nHV <- table %>% filter(HV==0)
+#input is a gene name. My tester nonhv gene name is AT5G38340
+name <-'AT5G38340'
+
+find_hv_neighbor <- function(name){
+  line <- just_nHV %>% filter(gene==name)
+  gene_start <- line$start %>% unlist()
+  gene_end <- line$end %>% unlist()
+  gene_chr <- line$chrom %>% unlist()
+  candidates <- just_HV %>% filter(chrom == gene_chr)
+
+  #four possibilities: 
+  return(min(abs(gene_start-candidates$start), 
+    abs(gene_start-candidates$end),
+    abs(gene_end-candidates$start),
+    abs(gene_end-candidates$end)))
+}
+
+find_hv_neighbor(name)
+just_nHV_neighbor <- just_nHV %>% 
+  mutate(neighbor_dist = mapply(just_nHV$gene, FUN = find_hv_neighbor))
+
+#the reciprocal 
+find_nhv_neighbor <- function(name){
+  line <- just_HV %>% filter(gene==name)
+  gene_start <- line$start %>% unlist()
+  gene_end <- line$end %>% unlist()
+  gene_chr <- line$chrom %>% unlist()
+  candidates <- just_nHV %>% filter(chrom == gene_chr)
+
+  #four possibilities: 
+  return(min(abs(gene_start-candidates$start), 
+    abs(gene_start-candidates$end),
+    abs(gene_end-candidates$start),
+    abs(gene_end-candidates$end)))
+}
+
+just_HV_neighbor <- just_HV %>% 
+  mutate(neighbor_dist = mapply(just_HV$gene, FUN = find_nhv_neighbor))
+
+table <- rbind(just_HV_neighbor, just_nHV_neighbor)
+```
+
+Add gene common names grifted from Daniil's phylogeny.
+```{r}
+gene_names <- readxl::read_xlsx(path = "C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//gene_names_Daniil_tree.xlsx", col_names=c('itol_name', 'gene_name'))
+
+test <- gene_names %>% separate(col=itol_name, sep=' ', into=c(NA, 'transcript_name'), remove=FALSE) %>% filter(itol_name != 'I264') %>% filter(itol_name != 'I0')
+
+test$gene <- substr(test$transcript_name, 1, nchar(test$transcript_name)-2)
+
+named_table <- merge(test, table, by='gene', all=TRUE)
+#two genes in the phylogeny, but not in working_table (obvi) 
+named_table %>% filter(is.na(HV)) 
+
+working_table %>% filter(Gene == 'AT1G33560')
+working_table %>% filter(Gene == 'AT4G16990')
+
+#in chae table, so they weren't in og hv table..  
+chae %>% filter(gene == 'AT1G33560' | gene == 'AT4G16990')
+
+#both non-hv according to Daniil's phylogeny.
+#Hmmmmm two new data points. Should probably go re-run through the pipeline 
+```
+
+```{r}
+write.xlsx(named_table, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\table.xlsx')
+```
+
+
+```{r}
+table
+ggplot(table, aes(x=log2_TPM, color=HV)) +
+  geom_histogram(fill='white')
+
+ggplot(table, aes(x=te_dist, color=HV)) +
+  geom_histogram(fill='white', alpha=0.5, position='identity')
+
+ggplot(table, aes(x=mean_percent_methylation, color=HV)) +
+  geom_histogram(fill='white', alpha=0.5, position='identity')
+
+ggplot(table, aes(x=c(log2_TPM, te_dist, mean_percent_methylation), color=HV)) +
+  geom_histogram(fill='white', alpha=0.5)
+```
+
+```{r}
+rpp4_table <- table %>% mutate(rpp4=recode(cluster, 'DM8_RPP4-5' = "rpp4", 
+                                       .default ='other'))
+
+meth <- ggplot(rpp4_table,
+       aes(x=HV, y=mean_percent_methylation))+
+    geom_violin(aes(fill=HV))+
+    scale_fill_manual(values=c('#00BFC4', '#F8766D')) +
+    geom_point(data=rpp4_table, aes(x=HV, y=mean_percent_methylation, color=rpp4, fill=HV), 
+               position = position_jitterdodge(), alpha=0.3)+
+    theme_classic()+
+  theme(text=element_text(size=18))+
+  labs(y='% CpG Methylation', x='', fill = '')+
+  stat_compare_means(method='t.test', 
+                     label = 'p.signif', 
+                     bracket.size=0.3)
+tpm <- ggplot(rpp4_table,
+       aes(x=HV, y=mean))+
+    geom_violin(aes(fill=HV))+
+    scale_fill_manual(values=c('#00BFC4', '#F8766D')) +
+    geom_point(data=rpp4_table, aes(x=HV, y=mean, color=rpp4, fill=HV), 
+               position = position_jitterdodge(), alpha=0.3)+
+    theme_classic()+
+  theme(text=element_text(size=18))+
+  labs(y='Average TPM', x='', fill = '')+
+  stat_compare_means(method='t.test', 
+                     label = 'p.signif', 
+                     bracket.size=0.3)
+
+
+te_dist <- ggplot(rpp4_table,
+       aes(x=HV, y=te_dist))+
+    geom_violin(aes(fill=HV))+
+    scale_fill_manual(values=c('#00BFC4', '#F8766D')) +
+    geom_point(data=rpp4_table, aes(x=HV, y=te_dist, color=rpp4, fill=HV), 
+               position = position_jitterdodge(), alpha=0.3)+
+    theme_classic()+
+  theme(text=element_text(size=18))+
+  labs(y='TE Distance', x='', fill = '')+
+  stat_compare_means(method='t.test', 
+                     label = 'p.signif', 
+                     bracket.size=0.3)
+
+meth
+te_dist
+tpm
+```
+
+```{r}
+#who are the outliers in all conditions? 
+meth_out <- table %>% filter(HV == 1) %>% arrange(desc(mean_percent_methylation)) %>% dplyr::select(gene) 
+meth_out <- meth_out[1:4,]
+
+tpm_out <- table %>% filter(HV == 1) %>% arrange(mean) %>% dplyr::select(gene) 
+tpm_out <- tpm_out[1:2,]
+
+te_out <- table %>% filter(HV == 1) %>% arrange(desc(te_dist)) %>% dplyr::select(gene) 
+te_out <- te_out[1:2,]
+
+print(meth_out)
+print(tpm_out)
+print(te_out)
+```
+
+
+No overlapping suspects 
+
+```{r}
+#test siggy 
+table$neighbor <- table$neighbor_dist <= 50000
+j_neighbor <- table %>% filter(neighbor == TRUE)
+
+
+transcription_p <- compare_means(log2_TPM~HV, table, method='t.test', group.by='neighbor')$p
+meth_p <- compare_means(mean_percent_methylation~HV, table, method='t.test', group.by='neighbor')$p
+te_p <- compare_means(te_dist~HV, table, method='t.test', group.by='neighbor')$p
+```
+
+```{r}
+ggplot((table),
+       aes(x=neighbor, y=log2_TPM))+
+  geom_violin(aes(fill=HV))+
+  scale_fill_manual(values=c('#00BFC4', '#F8766D')) +
+  geom_point(data=table, 
+             aes(x=neighbor, y=log2_TPM, fill=HV), 
+             position=position_jitterdodge(),
+             alpha = 0.3) + 
+  theme_classic()+
+  labs(y='log2_TPM', x='', fill = '', title='expression by neighborhood')+
+  scale_x_discrete(breaks=c("TRUE","FALSE"),
+        labels=c("neighbor", "not"))+
+  geom_signif(stat="identity", 
+              data=data.frame(x = c(0.8, 1.8),
+                              xend=c(1.2, 2.2),
+                              y = c(8, 8),
+                              annotation = as.character(transcription_p)), 
+              aes(x=x, 
+                  xend=xend, 
+                  y=y, 
+                  yend=y,
+                  annotation=annotation), 
+              tip_length=0.1)
+
+```
+
+
+```{r}
+ggplot((table),
+       aes(x=neighbor, y=mean_percent_methylation))+
+  geom_violin(aes(fill=HV))+
+  scale_fill_manual(values=c('#00BFC4', '#F8766D')) +
+  geom_point(data=table, 
+             aes(x=neighbor, y=mean_percent_methylation, fill=HV), 
+             position=position_jitterdodge(),
+             alpha = 0.3) + 
+  theme_classic()+
+  labs(y='mean_percent_methylation', x='', fill = '', title='Mean % methylation by neighborhood')+
+    scale_x_discrete(breaks=c("TRUE","FALSE"),
+        labels=c("neighbor", "not"))+
+  geom_signif(stat="identity", 
+              data=data.frame(x = c(0.8, 1.8),
+                              xend=c(1.2, 2.2),
+                              y = c(80, 50),
+                              annotation = as.character(meth_p)), 
+              aes(x=x, 
+                  xend=xend, 
+                  y=y, 
+                  yend=y,
+                  annotation=annotation), 
+              tip_length=0.1)
+```
+
+
+```{r}
+ggplot((table),
+       aes(x=neighbor, y=te_dist))+
+  geom_violin(aes(fill=HV))+
+  scale_fill_manual(values=c('#00BFC4', '#F8766D')) +
+  geom_point(data=table, 
+             aes(x=neighbor, y=te_dist, fill=HV), 
+             position=position_jitterdodge(),
+             alpha = 0.3) + 
+  theme_classic()+
+  labs(y='te_dist', x='', fill = '', title = 'TE distance by neighborhood')+
+    scale_x_discrete(breaks=c("TRUE","FALSE"),
+        labels=c("neighbor", "not"))+
+    geom_signif(stat="identity", 
+              data=data.frame(x = c(0.8, 1.8),
+                              xend=c(1.2, 2.2),
+                              y = c(35, 20),
+                              annotation = as.character(te_p)), 
+              aes(x=x, 
+                  xend=xend, 
+                  y=y, 
+                  yend=y,
+                  annotation=annotation), 
+              tip_length=0.1)
+
+```
+
