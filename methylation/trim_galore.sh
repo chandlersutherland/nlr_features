@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=methylation_processing
 #SBATCH --partition=savio4_htc
-#SBATCH --qos=savio_normal
+#SBATCH --qos=minium_htc4_normal
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
 #SBATCH --time=01:00:00
