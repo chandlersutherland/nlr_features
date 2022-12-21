@@ -16,10 +16,12 @@ source activate e14
 module load samtools
 
 #need to export three variables, trim_output directory, which is our input directory, bismark_output directory, and the genome file 
-cd trim_output
+cd $trim_output
 
 #for each sample, write the mates to a csv file 
 samples=$(basename -s _1_trimmed.fq  *_1*.fq)
+echo $samples
+
 touch mates_1.csv 
 touch mates_2.csv 
 
