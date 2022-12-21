@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=methylation_processing
 #SBATCH --partition=savio4_htc
-#SBATCH --qos=savio_normal
+#SBATCH --qos=minium_htc4_normal
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
 #SBATCH --time=06:00:00
@@ -26,4 +26,4 @@ trim_output="/global/scratch/users/chandlersutherland/e14/trim_williams/pooled"
 genome="/global/scratch/users/chandlersutherland/phytozome/Athaliana/Araport11/assembly"
 bismark_output="/global/scratch/users/chandlersutherland/e14/bismark/bam_files/pooled"
 
-sbatch --job-name=bio_reps.bismark --export=trim_output=$trim_output,genome=$genome,bismark_output=$bismark_output -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/bismark.sh
+sbatch --job-name=bio_reps.bismark --export=trim_output=$trim_output,genome=$genome,bismark_output=$bismark_output -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/bismark.bash
