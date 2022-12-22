@@ -20,6 +20,6 @@ TRIM_DIR=/global/home/users/chandlersutherland/programs/TrimGalore-0.6.6
 for f in  ${samples[@]}
 do 
    BASENAME=$(basename $f .fastq)
-   $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired_file "${f}"_1.fastq "${f}"_2.fastq
+   $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired $trim_input/"${f}"_1.fastq $trim_input/"${f}"_2.fastq
    echo "finished trimming ${BASENAME}"
 done 
