@@ -4,7 +4,7 @@
 #SBATCH --qos=minium_htc4_normal
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
-#SBATCH --time=01:00:00
+#SBATCH --time=00:01:00
 #SBATCH --mail-user=chandlersutherland@berkeley.edu
 #SBATCH --mail-type=ALL
 #SBATCH --error=/global/home/users/chandlersutherland/slurm_stderr/slurm-%j.out
@@ -20,6 +20,6 @@ echo ${samples[@]}
 for f in  ${samples[@]}
 do 
    BASENAME=$(basename $f .fastq)
-   $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired $trim_input/"${f}"_1.fastq $trim_input/"${f}"_2.fastq
+ #  $TRIM_DIR/trim_galore -o $trim_output --fastqc --illumina --paired $trim_input/"${f}"_1.fastq $trim_input/"${f}"_2.fastq
    echo "finished trimming ${BASENAME}"
 done 
