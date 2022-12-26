@@ -23,7 +23,7 @@ samples=("biorep1" "biorep2")
 trim_input="/global/scratch/users/chandlersutherland/e14/bs_fastq_files/williams_pooled"
 trim_output="/global/scratch/users/chandlersutherland/e14/trim_williams/pooled"
 
-#sbatch --job-name=bio_reps.trim_galore --export=trim_input=$trim_input,trim_output=$trim_output,samples=$samples -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/trim_galore.sh
+sbatch --job-name=bio_reps.trim_galore --export=trim_input=$trim_input,trim_output=$trim_output,samples=$samples -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/trim_galore.sh
 
 #run bismark alignment 
 genome="/global/scratch/users/chandlersutherland/phytozome/Athaliana/Araport11/assembly"
