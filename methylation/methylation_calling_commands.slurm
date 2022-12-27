@@ -45,4 +45,4 @@ extraction_output="/global/scratch/users/chandlersutherland/e14/bismark/extracti
 
 #finish extraction to coverage files, and filter to >5 reads per cytosine 
 while read sample; do sbatch --job-name=$sample.extract --export=extraction_output=$extraction_output,sample=$sample\
--A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/bismark_2_bedgraph.bash; done < samples.txt
+ -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/bismark_2_bedgraph.bash; done < samples.txt

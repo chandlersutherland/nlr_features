@@ -50,7 +50,7 @@ BISMARK_BEDGRAPH_CpG () {
 
 export -f BISMARK_BEDGRAPH_CpG
 
-CpG_in=$extraction_output/CHG_context_${sample}_1_val_1_bismark_bt2_pe.deduplicated.txt
+CpG_in=$extraction_output/CpG_context_${sample}_1_val_1_bismark_bt2_pe.deduplicated.txt
 CpG_out=$extraction_output/bedGraph_highcov 
 
 BISMARK_BEDGRAPH_CpG $CpG_in $CpG_out 
@@ -58,4 +58,4 @@ BISMARK_BEDGRAPH_CpG $CpG_in $CpG_out
 cd $extraction_output/bedGraph_highcov
 gunzip *.cov.gz 
 
-echo 'finished generating context specific coverage files for ${sample}"
+echo 'finished generating context specific coverage files for ${sample}'
