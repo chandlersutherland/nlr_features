@@ -1,0 +1,68 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Making iTol files 
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(openxlsx)
+library(ggsignif)
+library(ggpubr)
+```
+
+First, add the itol branch length names and common gene names to the methylation/expression/TE distance information 
+```{r}
+#read in the methylation, expression, and TE distance for all genes, filter to NLRs
+table <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//all_gene_table.xlsx")
+NLR_table <- table %>% filter(HV != 'all_genes')
+
+#read in the cluster information and N-term status 
+cluster <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\chae_2020_supplemental.xlsx")
+NLR_table <- merge(NLR_table, cluster, by.x='Gene', by.y='gene', all.x=TRUE)
+
+#add gene name information and the itol branch labels 
+gene_names <- readxl::read_xlsx(path = "C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//gene_names_Daniil_tree.xlsx", col_names=c('itol_name', 'gene_name'))
+
+names <- gene_names %>% separate(col=itol_name, sep=' ', into=c(NA, 'transcript_name'), remove=FALSE) %>% filter(itol_name != 'I264') %>% filter(itol_name != 'I0')
+names$Gene <- substr(names$transcript_name, 1, nchar(names$transcript_name)-2)
+
+named_table <- merge(names, NLR_table, by='Gene', all.x=TRUE)
+```
+
+Starting with some binaries: HV/nonhv
+```{r}
+itol_HV <- named_table[c('itol_name', 'HV')]
+itol_HV <- itol_HV %>% mutate(HV_itol=recode(HV, `0`='-1'))
+write.xlsx(itol_HV, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\itol_files\\itol_HV.xlsx')
+```
+Color gradient/actually interesting data 
+```{r}
+itol_TPM <- named_table[c('itol_name', 'log2_TPM')]
+write.xlsx(itol_TPM, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\itol_files\\itol_tpm.xlsx')
+
+itol_meth <- named_table[c('itol_name', 'meth_percentage')]
+write.xlsx(itol_meth, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\itol_files\\itol_meth.xlsx')
+```
+
+
+TE could easily become a binary, which may be more informative anyway 
+```{r}
+#how about TE within 1kb
+named_table['te_neighbor_500'] = named_table['te_dist'] <= 500
+named_table$te_neighbor_500 <- named_table$te_neighbor_500 %>% as.integer() %>% as.character()
+
+itol_te_500 <- named_table[c('itol_name', 'te_neighbor_500')]
+itol_te_500 <- itol_te_500 %>% mutate(te_neighbor_500=recode(te_neighbor_500, '0'='-1'))
+itol_te_500[is.na(itol_te_500)] <- '1'
+
+write.xlsx(itol_te_500, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\itol_files\\itol_te_500.xlsx')
+```
+
+```{r}
+#HV color strip 
+itol_HV <- itol_HV %>% mutate(HV_color=recode(HV, `1`='#F8766D', `0` = ''))
+write.xlsx(itol_HV, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\itol_files\\itol_HV.xlsx')
+```
