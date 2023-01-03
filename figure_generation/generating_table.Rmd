@@ -5,10 +5,6 @@ date: '2022-08-25'
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ```{r}
 library(tidyverse)
 library(ggplot2)
@@ -32,9 +28,14 @@ paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " 
 
 ```{r}
 #per gene average % CpG methylation 
-dif_mean <- read.csv('C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/e14_R/CpG_per_gene_met_biorep1.tsv', sep='\t', col.names = c('Chrom', 'Gene', 'meth_percentage', 'cg_count'), skip=1)
+SRR17281085 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281085_per_gene_meth.xlsx")
+SRR17281086 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281086_per_gene_meth.xlsx")
+SRR17281087 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281087_per_gene_meth.xlsx")
+SRR17281088 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281088_per_gene_meth.xlsx")
 
-dif_merge <- merge(dif_mean, NLR_table, by='Gene', all=TRUE)
+all_meth <- rbind(SRR17281085, SRR17281086, SRR17281087, SRR17281088) %>%
+  group_by(Gene) %>% summarize(meth_percentage=mean(mean_meth_percentage))
+
 ```
 
 
@@ -43,7 +44,7 @@ dif_merge <- merge(dif_mean, NLR_table, by='Gene', all=TRUE)
 TPM <- read.table("C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/e14_R/tpm_matrix.csv", header=TRUE, sep=",", row.names=2)%>% dplyr::select(-X)
 
 TPM_df <- TPM %>% mutate('mean' = rowMeans(TPM[1:4])) 
-all_expression <- merge(TPM_df, dif_merge, by.x=0, by.y='Gene', all.y=TRUE)
+all_expression <- merge(TPM_df, all_meth, by.x=0, by.y='Gene', all=TRUE)
 all_expression <- all_expression %>% mutate(log2_TPM = log2(all_expression$mean+1))
 
 #have to manually set the unmappable genes, since they just look like 0 
@@ -63,7 +64,8 @@ TE <- merge(TE_table, all_expression, by.x = 'Gene', by.y='Row.names', all=TRUE)
 
 ```{r}
 #clean and concentrate 
-table <- TE %>% subset(select=c('Gene', 'HV', 'log2_TPM', 'meth_percentage', 'te_dist')) %>%
+merged <- merge(TE, NLR_table, by='Gene', all=TRUE)
+table <- merged %>% subset(select=c('Gene', 'HV', 'log2_TPM', 'meth_percentage', 'te_dist')) %>%
   mutate(HV=recode(HV, `0` = "non-hv", `1`="hv"))
 
 table$HV[is.na(table$HV)]<-'all_genes'
