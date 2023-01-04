@@ -30,6 +30,7 @@ names <- gene_names %>% separate(col=itol_name, sep=' ', into=c(NA, 'transcript_
 names$Gene <- substr(names$transcript_name, 1, nchar(names$transcript_name)-2)
 
 named_table <- merge(names, NLR_table, by='Gene', all.x=TRUE)
+
 ```
 
 Starting with some binaries: HV/nonhv
