@@ -1,0 +1,145 @@
+---
+title: "Enrichment Plots"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(openxlsx)
+library(ggsignif)
+library(ggpubr)
+```
+
+```{r}
+#load in all gene data 
+table <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
+```
+
+Write a function that takes in a column name, then outputs a ranked list 
+```{r}
+ranking <- function(table, x){
+  filt <- table[,c('Gene', 'HV', x)] 
+  filt <- filt[complete.cases(filt), ]
+  filt <- filt[order(filt[[x]]),]
+  hv <- filt %>% filter(HV == 'hv') %>% pull('Gene')
+  nonhv <- filt %>% filter(HV == 'non-hv') %>% pull('Gene')
+  
+  #assign the rank and calculate normalized rank 
+  filt$rank <- row.names(filt) %>% as.numeric()
+  filt$norm_rank <- filt$rank/nrow(filt)
+  
+  #find the hv and nonhv rank 
+  hv_rank <- filt %>% subset(Gene %in% hv) %>% mutate(set='hv')
+  nhv_rank <- filt %>% subset(Gene %in% nonhv) %>% mutate(set='non-hv')
+  
+  #bind and return ranks
+  rank <- rbind(hv_rank, nhv_rank)
+  rank <- rank[c('norm_rank', 'set')]
+  
+  rank
+}
+
+exp_rank <- ranking(table, 'log2_TPM')
+meth_rank <- ranking(table, "meth_percentage")
+te_rank <- ranking(table, 'te_dist')
+```
+
+Methylation enrichment plot:
+```{r}
+#methylation enrichment plot 
+p1 <- ggplot(meth_rank, aes(x = norm_rank, col = set)) +
+  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.25)
+
+#ymap = c(0, 0)
+
+#get info about axis limits 
+#dens = ggplot_build(p1)$data[[1]]$density
+#ymap[1] = round(max(dens), digits = 1) + 0.1
+#ymap[2] = round(min(dens), digits = 1) - 0.1
+ymap = c(2.6, -0.1)
+meth_enrich_p <- p1 + 
+  geom_segment(data= meth_rank %>% filter(set=='hv'), aes(
+      x= norm_rank,
+  		y = ymap[1],
+  		xend = norm_rank,
+  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.25) +
+  	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+geom_segment(data= meth_rank %>% filter(set=='non-hv'), aes(
+      x= norm_rank,
+  		y = ymap[2],
+  		xend = norm_rank,
+  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.25) +
+  	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+  theme_classic()+
+  theme(legend.position='none', text=element_text(size=10), 
+        axis.title=element_blank())
+
+meth_enrich_p
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\met_enrich.png', plot=meth_enrich_p, dpi='retina', width=2, height=1.5)
+```
+```{r}
+p2 <- ggplot(exp_rank, aes(x = norm_rank, col = set)) +
+  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.25)
+
+#ymap = c(0, 0)
+
+#get info about axis limits 
+#dens = ggplot_build(p2)$data[[1]]$density
+#ymap[1] = round(max(dens), digits = 1) + 0.1
+#ymap[2] = round(min(dens), digits = 1) - 0.1
+ymap = c(2.6, -0.1)
+exp_enrich_p <- p2 + geom_segment(data= exp_rank %>% filter(set=='hv'), aes(
+      x= norm_rank,
+  		y = ymap[1],
+  		xend = norm_rank,
+  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.25) +
+  	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+geom_segment(data= exp_rank %>% filter(set=='non-hv'), aes(
+      x= norm_rank,
+  		y = ymap[2],
+  		xend = norm_rank,
+  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.25) +
+  	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+  theme_classic()+
+  theme(legend.position='none', text=element_text(size=10), axis.title=element_blank())
+
+exp_enrich_p
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\exp_enrich.png', plot=exp_enrich_p, dpi='retina', width=2, height=1.5)
+```
+```{r}
+p3 <- ggplot(te_rank, aes(x = norm_rank, col = set)) +
+  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.25)
+
+ymap = c(2.6, -0.1)
+
+#get info about axis limits 
+#dens = ggplot_build(p3)$data[[1]]$density
+#ymap[1] = round(max(dens), digits = 1) + 0.1
+#ymap[2] = round(min(dens), digits = 1) - 0.1
+
+te_enrich_p <- p3 + geom_segment(data= te_rank %>% filter(set=='hv'), aes(
+      x= norm_rank,
+  		y = ymap[1],
+  		xend = norm_rank,
+  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.25) +
+  	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+geom_segment(data= te_rank %>% filter(set=='non-hv'), aes(
+      x= norm_rank,
+  		y = ymap[2],
+  		xend = norm_rank,
+  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.25) +
+  	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+  theme_classic() +
+  theme(legend.position='none', text=element_text(size=10), axis.title=element_blank())
+
+te_enrich_p
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\te_enrich.png', plot=te_enrich_p, dpi='retina', width=2, height=1.5)
+```
+
