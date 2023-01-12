@@ -28,14 +28,15 @@ paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " 
 
 ```{r}
 #per gene average % CpG methylation 
-SRR17281085 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281085_per_gene_meth.xlsx")
-SRR17281086 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281086_per_gene_meth.xlsx")
-SRR17281087 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281087_per_gene_meth.xlsx")
-SRR17281088 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281088_per_gene_meth.xlsx")
+SRR17281085 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281085_per_gene_meth_count.xlsx", skip=2, col_names = c('Index', 'Chrom', 'Gene', 'mean_percent_methylation', 'count'))
+SRR17281086 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281086_per_gene_meth_count.xlsx", skip=2, col_names = c('Index', 'Chrom', 'Gene', 'mean_percent_methylation', 'count'))
+SRR17281087 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281087_per_gene_meth_count.xlsx", skip=2, col_names = c('Index', 'Chrom', 'Gene', 'mean_percent_methylation', 'count'))
+SRR17281088 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281088_per_gene_meth_count.xlsx", skip=2, col_names = c('Index', 'Chrom', 'Gene', 'mean_percent_methylation', 'count'))
 
 all_meth <- rbind(SRR17281085, SRR17281086, SRR17281087, SRR17281088) %>%
-  group_by(Gene) %>% summarize(meth_percentage=mean(mean_meth_percentage))
+  group_by(Gene) %>% summarize(meth_percentage=mean(mean_percent_methylation))
 
+all_meth
 ```
 
 
@@ -58,7 +59,9 @@ all_expression$mean[all_expression$Row.names %in% unmappable] <- NA
 ```{r}
 #TE distance
 TE_table <- read.table(file='C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/e14_R/Atha_genes_with_TE_dist.tsv', header=1) %>% distinct()
-TE <- merge(TE_table, all_expression, by.x = 'Gene', by.y='Row.names', all=TRUE)
+#converte TE distance to kb 
+TE <- merge(TE_table, all_expression, by.x = 'Gene', by.y='Row.names', all=TRUE) %>%
+  mutate(te_dist = te_dist/1000)
 ```
 
 
