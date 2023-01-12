@@ -10,7 +10,6 @@
 #SBATCH --error=/global/home/users/chandlersutherland/slurm_stderr/slurm-%j.out
 #SBATCH --output=/global/home/users/chandlersutherland/slurm_stdout/slurm-%j.out
 
-#First, align to 
 
 #define directory variables
 INPUT=/global/scratch/users/chandlersutherland/e14/polyester/primary_simulated_reads_1006
@@ -19,7 +18,7 @@ SCRATCH_DIR=/global/scratch/users/chandlersutherland/e14/
 cd $INPUT
 FILES=$(for f in *.fasta; do echo $f; done)
 
-#step 1: STAR 
+#step 1: STAR to align reads to the prepared genome 
 GENOME_DIR_WILLIAMS=/global/scratch/users/chandlersutherland/phytozome/Athaliana/Araport11/assembly/STAR_genome_williams
 STAR_OUTPUT=$INPUT/STAR
 mkdir $STAR_OUTPUT
