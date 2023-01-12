@@ -1,0 +1,61 @@
+---
+title: "TE processing"
+author: "Chandler Sutherland"
+date: "2023-01-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(openxlsx)
+library(ggsignif)
+library(ggpubr)
+```
+
+Goal: Determine the median TE distances between hv and non-hvNLRs, and if hvNLRs are more likely to overlap with TEs. 
+
+```{r}
+#load data, filter to NLRs
+table <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
+
+NLR_table <- table %>% filter(HV != 'all_genes') 
+
+```
+
+Calculate median 
+```{r}
+hv_med <- NLR_table[NLR_table$HV == 'hv', ][['te_dist']] %>% median()
+nhv_med <- NLR_table[NLR_table$HV == 'non-hv', ][['te_dist']] %>% median()
+
+paste('The median TE distance for hvNLRs is ', hv_med, 'while the median te distance for non-hvNLRs is', nhv_med)
+```
+What percent of hvNLRs overlap with a TE? And vice versa?
+```{r}
+hv_percent <- sum(NLR_table[NLR_table$HV == 'hv', ][['te_dist']] == 0)/length(NLR_table[NLR_table$HV == 'hv', ][['te_dist']])
+
+nhv_percent <- sum(NLR_table[NLR_table$HV == 'non-hv', ][['te_dist']] == 0)/length(NLR_table[NLR_table$HV == 'non-hv', ][['te_dist']])
+
+paste('The % of hvNLRs overlapping with a TE is ', hv_percent*100, 'while the % of non-hvNLRs overlapping with a TE is', nhv_percent*100)
+
+```
+
+Chi-square test of independence
+Relationship betwen two categorical variables (overlapping or not). Null: variables are independent, knowing the value of one does not help predict the value of the other. 
+
+H1: variables are dependent, there is a relationship between the categorical variables, knowing the value of one variable helps to predict the value of the other 
+
+
+```{r}
+#create a contingency table 
+NLR_table$te_overlap <- ifelse(NLR_table$te_dist ==0, 'te overlap', 'not')
+cont_tbl <- table(NLR_table$HV, NLR_table$te_overlap)
+
+chisq.test(cont_tbl)
+```
+
+
