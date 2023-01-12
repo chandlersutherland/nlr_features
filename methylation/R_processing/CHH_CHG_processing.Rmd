@@ -70,3 +70,32 @@ compare_means(CHG_mean~HV.x, conglom, method='t.test', paired=FALSE)
 compare_means(CHH_mean~HV.x, conglom, method='t.test', paired=FALSE)
 ```
 Nope, not significant.
+
+```{r}
+ggplot(CHH %>% filter(HV.x != 'all_genes'),
+       aes(x=HV.x, y=CHH_mean, fill=HV.x))+
+    geom_violin()+
+    geom_point(position = position_jitterdodge(), alpha=0.3)+
+   ylim(0,30)+
+   geom_signif(comparisons=list(c('non-hv', 'hv')), 
+               map_signif_level = TRUE, y_position = c(25, 20), test=t.test)+
+    scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
+  theme_classic()+
+  labs(x = '', y='% gene body CHH')+
+  ggtitle('CHH methylation')+
+    theme(legend.position='none') 
+
+ggplot(CHG %>% filter(HV.y != 'all_genes'),
+       aes(x=HV.y, y=CHG_mean, fill=HV.y))+
+    geom_violin()+
+    geom_point(position = position_jitterdodge(), alpha=0.3)+
+   ylim(0,30)+
+   geom_signif(comparisons=list(c('non-hv', 'hv')), 
+               map_signif_level = TRUE, y_position = c(25, 20), test=t.test)+
+    scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
+  theme_classic()+
+  labs(x = '', y='% gene body CHG')+
+  ggtitle('CHG methylation')+
+    theme(legend.position='none') 
+```
+
