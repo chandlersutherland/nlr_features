@@ -36,12 +36,11 @@ bismark_output="/global/scratch/users/chandlersutherland/e14/bismark/bam_files/d
 #/global/home/users/chandlersutherland/nlr_features/methylation/samtools_coverage_runner.bash; done < samples.txt
 
 #deduplicate files + extraction 
-deduplicate_input=$bismark_output
 extraction_output="/global/scratch/users/chandlersutherland/e14/bismark/extraction/drdd"
 
 mkdir -p $extraction_output
 
-while read sample; do sbatch --job-name=$sample.dedup --export=deduplicate_input=$deduplicate_input,extraction_output=$extraction_output,sample=$sample -A co_minium \
+while read sample; do sbatch --job-name=$sample.dedup --export=deduplicate_input=$bismark_output,extraction_output=$extraction_output,sample=$sample -A co_minium \
 /global/home/users/chandlersutherland/nlr_features/methylation/bismark_deduplicate.bash; done < samples.txt
 
 #finish extraction to coverage files, and filter to >5 reads per cytosine 

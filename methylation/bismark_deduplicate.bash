@@ -19,7 +19,7 @@ mkdir -p $deduplicate_input/deduplicate
 
 deduplicate_bismark -p \
 	--output_dir  $deduplicate_input/deduplicate \
-	$dedpulicate_input/${sample}_1_val_1_bismark_bt2_pe.bam
+	$deduplicate_input/${sample}_1_val_1_bismark_bt2_pe.bam
 echo "finished deduplication of ${sample}" 
 	
 bismark_methylation_extractor -p \
