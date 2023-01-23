@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bismark_deduplicate_n_extract
-#SBATCH --partition=savio2
-#SBATCH --qos=savio_normal
+#SBATCH --partition=savio4_htc
+#SBATCH --qos=minium_htc4_normal
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
 #SBATCH --time=02:00:00
