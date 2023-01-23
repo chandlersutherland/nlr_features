@@ -19,5 +19,5 @@ module load python
 #run the coverage file 
 for f in $cov_dir/*_${sample}.bed.gz.bismark.cov
 do 
-	python $HOME/nlr_features/methylation $f $gene_positions 
+	python $HOME/nlr_features/methylation/per_gene_methylation.py $f $gene_positions 
 done
