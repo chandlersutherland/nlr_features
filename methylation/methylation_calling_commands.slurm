@@ -10,6 +10,7 @@
 #SBATCH --error=/global/home/users/chandlersutherland/slurm_stderr/slurm-%j.out
 #SBATCH --output=/global/home/users/chandlersutherland/slurm_stdout/slurm-%j.out
 
+cd /global/home/users/chandlersutherland/nlr_features/methylation
 
 #Define the input directory, with fastq files ready for trimming
 trim_input="/global/scratch/users/chandlersutherland/e14/bs_fastq_files/williams_drdd"
@@ -17,7 +18,7 @@ trim_output="/global/scratch/users/chandlersutherland/e14/trim_williams/drdd"
 
 mkdir -p $trim_output
 
-while read sample; do sbatch --job-name=bio_reps.trim_galore --export=trim_input=$trim_input,trim_output=$trim_output,sample=$sample \
+while read sample; do sbatch --job-name=$sample.trim_galore --export=trim_input=$trim_input,trim_output=$trim_output,sample=$sample \
  -A co_minium /global/home/users/chandlersutherland/nlr_features/methylation/trim_galore.sh; done < samples.txt
 
 #run bismark alignment 
