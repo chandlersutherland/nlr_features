@@ -41,19 +41,18 @@ def cg_average(df):
     for i in range(0,len(cpg_cov)-1):
     #find and average the symmetrical CpG pairs 
     #this relies on sorting by chromosome and then by position, searching for neighbors
-    if cpg_cov.iloc[i, 1] == cpg_cov.iloc[i+1,1]-1:
-      obj = {'Chrom':cpg_cov.iloc[i,0], 
-             'start_pos':cpg_cov.iloc[i,1], 
-             'end_pos':cpg_cov.iloc[i+1,1], 
-             'meth_percentage':np.mean([cpg_cov.iloc[i,3], 
-                                                cpg_cov.iloc[i+1,3]])
-                                                }
-      avg_cpg.append(obj)
-      else: 
-        continue
-    
-  avg_cpg_df = pd.DataFrame.from_dict(avg_cpg)
-  return avg_cpg_df
+        if cpg_cov.iloc[i, 1] == cpg_cov.iloc[i+1,1]-1:
+            obj = {'Chrom':cpg_cov.iloc[i,0],
+                   'start_pos':cpg_cov.iloc[i,1],
+                   'end_pos':cpg_cov.iloc[i+1,1],
+                   'meth_percentage':np.mean([cpg_cov.iloc[i,3],
+                                              cpg_cov.iloc[i+1,3]])
+            }
+            avg_cpg.append(obj)
+        else:
+            pass
+        avg_cpg_df = pd.DataFrame.from_dict(avg_cpg)
+    return avg_cpg_df
 
 if context=='CpG':
     print('CpG context detected, averaging symmetrical positions')
