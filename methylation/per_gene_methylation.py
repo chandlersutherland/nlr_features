@@ -26,7 +26,7 @@ print('Output directory is '+out_dir)
 #second passed argument should be the bed file for the entire genome
 chroms = ['Chr1', 'Chr2', 'Chr3', 'Chr4', 'Chr5']
 pos_file=str(sys.argv[2])
-all_positions = pd.read_csv(pos_file, sep = '\t',header=0, names=['Chrom', 'start', 'end', 'gene'], index_col=False)
+all_positions = pd.read_csv(pos_file, sep = '\t',header=0, names=['Chrom', 'start', 'end', 'strand', 'gene'], index_col=False)
 
 #step 1: filter out ChrC and ChrM, since we don't care about them 
 met=methylation.loc[(methylation['Chrom']!='ChrC') & (methylation['Chrom']!='ChrM')] 
@@ -50,14 +50,14 @@ def cg_average(df):
             }
             avg_cpg.append(obj)
         else:
-            pass
+            continue
         avg_cpg_df = pd.DataFrame.from_dict(avg_cpg)
     return avg_cpg_df
 
 if context=='CpG':
     print('CpG context detected, averaging symmetrical positions')
     met=cg_average(met)
-    else: 
+else: 
         print('CHH or CHG context, no averaging necessary')
         
 
@@ -77,7 +77,7 @@ def gene_namer(pos, met):
   for j in range(0, len(pos)):
     start = pos.iloc[j, 1]
     end = pos.iloc[j, 2]
-    gene = pos.iloc[j, 3]
+    gene = pos.iloc[j, 4]
     met.loc[
       (met['Pos'].between(start,end)), 'Gene'] = gene
   return met.dropna()
