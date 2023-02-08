@@ -51,14 +51,14 @@ def cg_average(df):
             avg_cpg.append(obj)
         else:
             continue
-        avg_cpg_df = pd.DataFrame.from_dict(avg_cpg)
+    avg_cpg_df = pd.DataFrame.from_dict(avg_cpg)
     return avg_cpg_df
 
 if context=='CpG':
     print('CpG context detected, averaging symmetrical positions')
     met=cg_average(met)
 else: 
-        print('CHH or CHG context, no averaging necessary')
+    print('CHH or CHG context, no averaging necessary')
         
 
 #step 3: assign cytosines to genes. Define a few functions first 
