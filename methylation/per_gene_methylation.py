@@ -57,6 +57,7 @@ def cg_average(df):
 if context=='CpG':
     print('CpG context detected, averaging symmetrical positions')
     met=cg_average(met)
+    print('averaging complete')
 else: 
     print('CHH or CHG context, no averaging necessary')
         
@@ -104,6 +105,7 @@ def merge(df, pos_chroms):
   return cpg_per_gene
 
 pos_chroms = break_chroms(all_positions, chroms)  
+print('Chromosomes broken')
 all_gene_count=merge(met,pos_chroms) 
 print('Gene names assigned')
 
