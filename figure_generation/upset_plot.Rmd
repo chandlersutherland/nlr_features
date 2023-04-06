@@ -54,32 +54,32 @@ intersections=list('HV', 'non-HV',
 comparisons <- c('hv_nhv', 'clust', 'cnl', 'tnl', 'tnl_clust', 'cnl_clust')
 
 #transcription 
-hv_nhv <- compare_means(log2_TPM~HV, table, method='t.test')$p.adj 
-clust <- compare_means(log2_TPM~HV, table %>% filter(clustered == TRUE), method='t.test')$p.adj 
-cnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C'), method='t.test')$p.adj 
-tnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T'), method='t.test')$p.adj 
-tnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='t.test')$p.adj
-cnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='t.test')$p.adj
+hv_nhv <- compare_means(log2_TPM~HV, table, method='wilcox.test')$p.adj 
+clust <- compare_means(log2_TPM~HV, table %>% filter(clustered == TRUE), method='wilcox.test')$p.adj 
+cnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C'), method='wilcox.test')$p.adj 
+tnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T'), method='wilcox.test')$p.adj 
+tnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
+cnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
 
 transcription_pval <- c(hv_nhv, clust, cnl, tnl, tnl_clust, cnl_clust)
 
 #te_dist
-a <- compare_means(te_dist~HV, table, method='t.test')$p.adj
-b <- compare_means(te_dist~HV, table %>% filter(clustered == TRUE), method='t.test')$p.adj
-c <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C'), method='t.test')$p.adj
-d <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T'), method='t.test')$p.adj
-e <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='t.test')$p.adj
-f <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='t.test')$p.adj
+a <- compare_means(te_dist~HV, table, method='wilcox.test')$p.adj
+b <- compare_means(te_dist~HV, table %>% filter(clustered == TRUE), method='wilcox.test')$p.adj
+c <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C'), method='wilcox.test')$p.adj
+d <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T'), method='wilcox.test')$p.adj
+e <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
+f <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
 
 te_dist_pval <- c(a, b, c, d, e, f)
 
 #methylation
-g <- compare_means(meth_percentage~HV, table, method='t.test')$p.adj
-h <- compare_means(meth_percentage~HV, table %>% filter(clustered == TRUE), method='t.test')$p.adj
-i <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C'), method='t.test')$p.adj
-j <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T'), method='t.test')$p.adj
-k <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='t.test')$p.adj
-l <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='t.test')$p.adj
+g <- compare_means(meth_percentage~HV, table, method='wilcox.test')$p.adj
+h <- compare_means(meth_percentage~HV, table %>% filter(clustered == TRUE), method='wilcox.test')$p.adj
+i <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C'), method='wilcox.test')$p.adj
+j <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T'), method='wilcox.test')$p.adj
+k <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
+l <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
 
 meth_pval <- c(g, h, i, j, k, l)
 
@@ -145,7 +145,7 @@ p_upset2 <- upset(table, rev(sets), keep_empty_groups=TRUE, mode='inclusive_inte
               data=data.frame(x = c(1, 3, 5, 7, 9, 11),
                               xend=c(2, 4, 6, 8, 10, 12),
                               y = c(34, 34, 34, 34, 34, 34),
-                              annotation = c('***', ' *** ', '  ***  ', '**', '   ***   ', ' ** ')), 
+                              annotation = c('***', ' *** ', '  ***  ', 'n.s.', '*', '   ***   ')), 
               aes(x=x, xend=xend, y=y, yend=y, annotation=annotation, textsize=2.5), tip_length=0.1))
         ,
   '%CG Methylation' = (
