@@ -54,32 +54,32 @@ intersections=list('HV', 'non-HV',
 comparisons <- c('hv_nhv', 'clust', 'cnl', 'tnl', 'tnl_clust', 'cnl_clust')
 
 #transcription 
-hv_nhv <- compare_means(log2_TPM~HV, table, method='wilcox.test')$p.adj 
-clust <- compare_means(log2_TPM~HV, table %>% filter(clustered == TRUE), method='wilcox.test')$p.adj 
-cnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C'), method='wilcox.test')$p.adj 
-tnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T'), method='wilcox.test')$p.adj 
-tnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
-cnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
+hv_nhv <- compare_means(log2_TPM~HV, table, method='wilcox.test', paired=FALSE)$p.adj 
+clust <- compare_means(log2_TPM~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj 
+cnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj 
+tnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj 
+tnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
+cnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 
 transcription_pval <- c(hv_nhv, clust, cnl, tnl, tnl_clust, cnl_clust)
 
 #te_dist
-a <- compare_means(te_dist~HV, table, method='wilcox.test')$p.adj
-b <- compare_means(te_dist~HV, table %>% filter(clustered == TRUE), method='wilcox.test')$p.adj
-c <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C'), method='wilcox.test')$p.adj
-d <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T'), method='wilcox.test')$p.adj
-e <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
-f <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
+a <- compare_means(te_dist~HV, table, method='wilcox.test', paired=FALSE)$p.adj
+b <- compare_means(te_dist~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj
+c <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj
+d <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj
+e <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
+f <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 
 te_dist_pval <- c(a, b, c, d, e, f)
 
 #methylation
-g <- compare_means(meth_percentage~HV, table, method='wilcox.test')$p.adj
-h <- compare_means(meth_percentage~HV, table %>% filter(clustered == TRUE), method='wilcox.test')$p.adj
-i <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C'), method='wilcox.test')$p.adj
-j <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T'), method='wilcox.test')$p.adj
-k <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
-l <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test')$p.adj
+g <- compare_means(meth_percentage~HV, table, method='wilcox.test', paired=FALSE)$p.adj
+h <- compare_means(meth_percentage~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj
+i <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj
+j <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj
+k <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
+l <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 
 meth_pval <- c(g, h, i, j, k, l)
 
