@@ -166,16 +166,14 @@ p_upset2 <- upset(table, rev(sets), keep_empty_groups=TRUE, mode='inclusive_inte
                               axis.line=element_blank(), 
                             #  panel.grid.major = element_blank(), 
                               panel.grid.minor = element_blank()),
-   base_annotations=list('Inclusive intersection size'=(
-     intersection_size(mode='inclusive_intersection', text=list(size=2.5)) + ylab('Set Size'))), 
- # set_sizes=FALSE, 
+   base_annotations=list(), 
+  set_sizes=FALSE, 
   matrix=(intersection_matrix(segment=geom_segment(linewidth=0.5), 
                               geom=geom_point(size=1.5)) 
   ))
 
-p_upset2
-#p_upset2 <- p_upset2 + patchwork::plot_layout(heights=c(0.75, 0.75, 0.75, 0.75, 1.15))
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\upset_sig.png', plot=p_upset2, dpi='retina', width=4, height=5.25)
+p_upset2 <- p_upset2 + patchwork::plot_layout(heights=c(1, 1, 1, .75))
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\upset_sig.png', plot=p_upset2, dpi='retina', width=4.5, height=6.25)
 ```
 
 ```{r}
