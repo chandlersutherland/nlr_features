@@ -26,7 +26,7 @@ print('Output directory is '+out_dir)
 #second passed argument should be the bed file for the entire genome
 chroms = ['Chr1', 'Chr2', 'Chr3', 'Chr4', 'Chr5']
 pos_file=str(sys.argv[2])
-all_positions = pd.read_csv(pos_file, sep = '\t',header=0, names=['Chrom', 'start', 'end', 'gene'], index_col=False)
+all_positions = pd.read_csv(pos_file, sep = '\t',header=0, names=['Chrom', 'start', 'end', 'strand', 'gene'], index_col=False)
 
 #step 1: filter out ChrC and ChrM, since we don't care about them 
 met=methylation.loc[(methylation['Chrom']!='ChrC') & (methylation['Chrom']!='ChrM')] 
@@ -41,25 +41,25 @@ def cg_average(df):
     for i in range(0,len(cpg_cov)-1):
     #find and average the symmetrical CpG pairs 
     #this relies on sorting by chromosome and then by position, searching for neighbors
-    if cpg_cov.iloc[i, 1] == cpg_cov.iloc[i+1,1]-1:
-      obj = {'Chrom':cpg_cov.iloc[i,0], 
-             'start_pos':cpg_cov.iloc[i,1], 
-             'end_pos':cpg_cov.iloc[i+1,1], 
-             'meth_percentage':np.mean([cpg_cov.iloc[i,3], 
-                                                cpg_cov.iloc[i+1,3]])
-                                                }
-      avg_cpg.append(obj)
-      else: 
-        continue
-    
-  avg_cpg_df = pd.DataFrame.from_dict(avg_cpg)
-  return avg_cpg_df
+        if cpg_cov.iloc[i, 1] == cpg_cov.iloc[i+1,1]-1:
+            obj = {'Chrom':cpg_cov.iloc[i,0],
+                   'start_pos':cpg_cov.iloc[i,1],
+                   'end_pos':cpg_cov.iloc[i+1,1],
+                   'meth_percentage':np.mean([cpg_cov.iloc[i,3],
+                                              cpg_cov.iloc[i+1,3]])
+            }
+            avg_cpg.append(obj)
+        else:
+            continue
+    avg_cpg_df = pd.DataFrame.from_dict(avg_cpg)
+    return avg_cpg_df
 
 if context=='CpG':
     print('CpG context detected, averaging symmetrical positions')
     met=cg_average(met)
-    else: 
-        print('CHH or CHG context, no averaging necessary')
+    print('averaging complete')
+else: 
+    print('CHH or CHG context, no averaging necessary')
         
 
 #step 3: assign cytosines to genes. Define a few functions first 
@@ -78,7 +78,7 @@ def gene_namer(pos, met):
   for j in range(0, len(pos)):
     start = pos.iloc[j, 1]
     end = pos.iloc[j, 2]
-    gene = pos.iloc[j, 3]
+    gene = pos.iloc[j, 4]
     met.loc[
       (met['Pos'].between(start,end)), 'Gene'] = gene
   return met.dropna()
@@ -105,6 +105,7 @@ def merge(df, pos_chroms):
   return cpg_per_gene
 
 pos_chroms = break_chroms(all_positions, chroms)  
+print('Chromosomes broken')
 all_gene_count=merge(met,pos_chroms) 
 print('Gene names assigned')
 
