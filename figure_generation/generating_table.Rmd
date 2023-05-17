@@ -96,6 +96,6 @@ nHV_count <- sum(all_table$HV == 'non-hv')
 ```
 
 ```{r}
-write.xlsx(table, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx')
+write.xlsx(all_table, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx')
 ```
 
