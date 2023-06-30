@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r}
+knitr::opts_knit$set(root.dir = 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14')
 library(tidyverse)
 library(ggplot2)
 library(openxlsx)
@@ -13,14 +14,29 @@ library(ggsignif)
 library(ggpubr)
 ```
 
-
-Read in the excel files 
+Read in the supplemental table from Chae 2020 and the HV status from Prighozin and Krasileva 2021
 ```{r}
-#load in NLR_table, which contains clustering derived from Chae 2020 and HV status Prighozin and Krasileva 2021 
-NLR_table <- readxl::read_xlsx(path='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\working_table.xlsx')
+chae <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\chae_2020_supplemental.xlsx")
 
-HV_count <- sum(NLR_table$HV == 1)
-nHV_count <- sum(NLR_table$HV == 0)
+clades <- read.table(file='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Atha_NLRome_GeneTable.txt', header=1) %>% filter(Ecotype=='ATHALIANA') %>% separate(Gene, c(NA, 'Gene'))%>%subset(select=c('Gene', 'Clade', 'HV'))
+
+#merge on Gene name 
+table <- merge(chae, clades, by.x='gene', by.y='Gene', all.y=TRUE)
+
+#Manually add information for At4G19050, which is missing from Chae analysis 
+index <- which(table$gene == 'AT4G19050')
+table[index, 3] = 'Chr4'
+table[index, 4] = '10439983'
+table[index, 5] = '10444121'
+table[index, 6] = '-'
+table[index, 7] = 'singleton'
+table[index, 18] = 'C' 
+```
+
+QC
+```{r}
+HV_count <- sum(table$HV == 1)
+nHV_count <- sum(table$HV == 0)
 
 paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " non-HV genes in my working table.")
 ```
@@ -67,19 +83,19 @@ TE <- merge(TE_table, all_expression, by.x = 'Gene', by.y='Row.names', all=TRUE)
 
 ```{r}
 #clean and concentrate 
-merged <- merge(TE, NLR_table, by='Gene', all=TRUE)
-table <- merged %>% subset(select=c('Gene', 'HV', 'log2_TPM', 'meth_percentage', 'te_dist')) %>%
+merged <- merge(TE, table, by.x='Gene', by.y='gene', all=TRUE)
+all_table <- merged %>% subset(select=c('Gene', 'HV', 'log2_TPM', 'meth_percentage', 'te_dist')) %>%
   mutate(HV=recode(HV, `0` = "non-hv", `1`="hv"))
 
-table$HV[is.na(table$HV)]<-'all_genes'
-table$HV <- factor(table$HV , levels=c("all_genes", "non-hv", "hv"))
+all_table$HV[is.na(all_table$HV)]<-'all_genes'
+all_table$HV <- factor(all_table$HV , levels=c("all_genes", "non-hv", "hv"))
 
-table
-HV_count <- sum(table$HV == 'hv')
-nHV_count <- sum(table$HV == 'non-hv')
+all_table
+HV_count <- sum(all_table$HV == 'hv')
+nHV_count <- sum(all_table$HV == 'non-hv')
 ```
 
 ```{r}
-write.xlsx(table, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx')
+write.xlsx(all_table, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx')
 ```
 

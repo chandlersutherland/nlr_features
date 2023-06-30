@@ -78,7 +78,8 @@ geom_segment(data= meth_rank %>% filter(set=='non-hv'), aes(
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
   theme_classic()+
   theme(legend.position='none', text=element_text(size=10), 
-        axis.title=element_blank())
+        axis.title=element_blank())+
+  annotate("text", x = 0.22, y = 1.6, label = "*", color='#F8766D', size=3) #greatest p value for hvNLR methylation weighted by GC content is .02, hvnlr is .55 (see permutations.Rmd for calculation)
 
 meth_enrich_p
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\met_enrich.png', plot=meth_enrich_p, dpi='retina', width=2, height=1.5)
@@ -106,9 +107,9 @@ geom_segment(data= exp_rank %>% filter(set=='non-hv'), aes(
   	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
   theme_classic()+
-  theme(legend.position='none', text=element_text(size=10), axis.title=element_blank())
+  theme(legend.position='none', text=element_text(size=10), axis.title=element_blank()) +
+  annotate("text", x = 0.825, y = 2.1, label = "**", color='#F8766D', size=3) #Greatest sample p value for singscore enrichment is 0.002
 
-exp_enrich_p
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\exp_enrich.png', plot=exp_enrich_p, dpi='retina', width=2, height=1.5)
 ```
 
@@ -133,7 +134,8 @@ geom_segment(data= te_rank %>% filter(set=='non-hv'), aes(
   	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
   theme_classic() +
-  theme(legend.position='none', text=element_text(size=10), axis.title=element_blank())
+  theme(legend.position='none', text=element_text(size=10), axis.title=element_blank())+
+  annotate("text", x = 0.07, y = 2.37, label = "***", color='#F8766D', size=3) #p value is 0 for hv, see permutations.Rmd
 
 te_enrich_p
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\te_enrich.png', plot=te_enrich_p, dpi='retina', width=2, height=1.5)
