@@ -41,7 +41,6 @@ nHV_count <- sum(table$HV == 0)
 paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " non-HV genes in my working table.")
 ```
 
-
 ```{r}
 #per gene average % CpG methylation 
 SRR17281085 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281085_per_gene_meth_count.xlsx", skip=2, col_names = c('Index', 'Chrom', 'Gene', 'mean_percent_methylation', 'count'))
