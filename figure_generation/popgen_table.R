@@ -31,3 +31,10 @@ col_popgen <- merge(col0_clean, omega, by='Clade', all.x=TRUE) %>%
   relocate("Gene", "Clade", "name", "HV")
 
 write_tsv(col_popgen, '/global/scratch/users/chandlersutherland/e14/popgen/col0_popgen_stats.tsv')
+
+domains <- read_tsv('/global/scratch/users/chandlersutherland/e14/popgen/domain_level_pi.tsv') %>% rename(Clade=clade)
+domain_col0 <- merge(col0_clean, domains, by='Clade', all.x=TRUE) %>% 
+  subset(select=-c(Clade_0, Clade_1, Clade_2, Clade_3, Ecotype, Allele, File, `...1`)) %>%
+  mutate(HV=recode(HV, `0` = "non-hv", `1`="hv"))
+
+write_tsv(domain_col0, '/global/scratch/users/chandlersutherland/e14/popgen/col0_per_domain_stats.tsv')
