@@ -36,6 +36,18 @@ table$singleton <- table$cluster_type == 'singleton'
 sets = c('HV', 'non-HV', 'clustered', 'CNL', 'TNL')
 rev(sets)
 ```
+```{r}
+table %>% group_by(HV, clustered) %>% summarize(n())
+
+cont_table <- data.frame(clustered=c(29,68),singleton=c(6,29), row.names=c("hv","non-hv"))
+chisq.test(cont_table, correct=FALSE)
+fisher.test(cont_table)
+```
+
+Calculate the cluster membership 
+```{r}
+table %>% group_by(HV, TNL) %>% summarize(n())
+```
 
 Time to calculate the p value using an unpaired wilcoxon rank sum test: 
 ```{r}
