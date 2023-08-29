@@ -18,7 +18,11 @@ Read in the supplemental table from Chae 2020 and the HV status from Prighozin a
 ```{r}
 chae <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\chae_2020_supplemental.xlsx")
 
-clades <- read.table(file='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Atha_NLRome_GeneTable.txt', header=1) %>% filter(Ecotype=='ATHALIANA') %>% separate(Gene, c(NA, 'Gene'))%>%subset(select=c('Gene', 'Clade', 'HV'))
+clades <- read.table(file='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Atha_NLRome_GeneTable.txt', header=1) %>% 
+  filter(Ecotype=='ATHALIANA') %>% 
+  separate(Gene, c(NA, 'Gene'))%>%
+  subset(select=c('Gene', 'Clade', 'HV')) %>% 
+  distinct()
 
 #merge on Gene name 
 table <- merge(chae, clades, by.x='gene', by.y='Gene', all.y=TRUE)
@@ -39,6 +43,8 @@ HV_count <- sum(table$HV == 1)
 nHV_count <- sum(table$HV == 0)
 
 paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " non-HV genes in my working table.")
+hvNLR <- table %>% filter(HV=='hv') %>% pull('gene')
+nonhvNLR <- table %>% filter(HV=='non-hv') %>% pull('gene') %>% unique()
 ```
 
 ```{r}
@@ -92,9 +98,41 @@ all_table$HV <- factor(all_table$HV , levels=c("all_genes", "non-hv", "hv"))
 all_table
 HV_count <- sum(all_table$HV == 'hv')
 nHV_count <- sum(all_table$HV == 'non-hv')
+
+paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " non-HV genes in my working table.")
+```
+```{r}
+#popgen stats from egglib generated on NLRome coding sequences as described in pi_calculation.ipynb 
+NLR_popgen <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//egglib_results.tsv") %>% 
+  filter(domain=='cds')%>%
+  mutate(Pi=Pi_raw/dna_aln) %>%
+  subset(select=c('Gene', 'D','Pi'))
+  
+NLR_popgen 
+
+#rest of the genome from vcf as described in whole_genome_popgen.ipynb
+whole_genome <- read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//cds_egglib_wholegenome2.csv") %>% 
+  subset(select=c('gene', 'Pi_by_dna', 'D')) %>%
+  rename('Pi_by_dna'='Pi', 'gene'='Gene') %>% distinct()
+
+whole_genome 
+
+#replace NLRs in whole genome with more accurate long read versions 
+NLRs <- NLR_popgen %>% pull('Gene') %>% unique()
+no_NLRs <- whole_genome %>% filter(!Gene %in% NLRs)
+
+popgen_table <- rbind(no_NLRs, NLR_popgen) %>% arrange(Gene)
+popgen_table
+final_table <- merge(all_table, popgen_table) %>% distinct()
+HV_count <- sum(final_table$HV == 'hv')
+nHV_count <- sum(final_table$HV == 'non-hv')
+
+final_table %>% filter(HV!='all_genes') %>% distinct() %>% group_by(Gene) %>% filter(n()>1)
+paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " non-HV genes in my working table.")
 ```
 
+
 ```{r}
-write.xlsx(all_table, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx')
+write.xlsx(final_table, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx')
 ```
 
