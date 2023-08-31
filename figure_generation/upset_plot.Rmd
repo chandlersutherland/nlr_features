@@ -66,48 +66,48 @@ intersections=list('HV', 'non-HV',
 comparisons <- c('hv_nhv', 'clust', 'cnl', 'tnl')
 
 #transcription 
-hv_nhv <- compare_means(log2_TPM~HV, table, method='wilcox.test', paired=FALSE)$p.adj 
-clust <- compare_means(log2_TPM~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj 
-cnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj 
-tnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj 
+hv_nhv <- compare_means(log2_TPM~HV, table, method='wilcox.test', paired=FALSE)$p.adj*4 
+clust <- compare_means(log2_TPM~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj*4 
+cnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj*4 
+tnl <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj*4 
 #tnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 #cnl_clust <- compare_means(log2_TPM~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 
 transcription_pval <- c(hv_nhv, clust, cnl, tnl) #, tnl_clust, cnl_clust)
 
 #te_dist
-a <- compare_means(te_dist~HV, table, method='wilcox.test', paired=FALSE)$p.adj
-b <- compare_means(te_dist~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj
-c <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj
-d <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj
+a <- compare_means(te_dist~HV, table, method='wilcox.test', paired=FALSE)$p.adj*4
+b <- compare_means(te_dist~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj*4
+c <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj*4
+d <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj*4
 #e <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 #f <- compare_means(te_dist~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 
 te_dist_pval <- c(a, b, c, d ) #, e, f)
 
 #methylation
-g <- compare_means(meth_percentage~HV, table, method='wilcox.test', paired=FALSE)$p.adj
-h <- compare_means(meth_percentage~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj
-i <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj
-j <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj
+g <- compare_means(meth_percentage~HV, table, method='wilcox.test', paired=FALSE)$p.adj*4
+h <- compare_means(meth_percentage~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p.adj*4
+i <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p.adj*4
+j <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p.adj*4
 #k <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 #l <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C')%>%filter(clustered==TRUE), method='wilcox.test', paired=FALSE)$p.adj
 
 meth_pval <- c(g, h, i, j )#, k, l)
 
 pval_table <- data.frame(comparisons, transcription_pval, meth_pval, te_dist_pval)
-pval_table <- pval_table %>% mutate(transcription_stars = case_when(transcription_pval >= 0.05/4 ~ 'n.s.', 
-                                                      transcription_pval < .05/4 & transcription_pval >= .01/4 ~ '*',
-                                                      transcription_pval < .01/4 & transcription_pval >= .001/4 ~ '**',
-                                                      transcription_pval < .001/4 & transcription_pval > 0 ~ '***')) %>%
-  mutate(meth_stars = case_when(meth_pval >= 0.05/4 ~ 'n.s.', 
-                                meth_pval < .05/4 & meth_pval >= .01/4 ~ '*',
-                                meth_pval < .01/4 & meth_pval >= .001/4 ~ '**',
-                                meth_pval < .001/4 & meth_pval > 0 ~ '***')) %>%
-  mutate(te_stars = case_when(te_dist_pval >= 0.05/4 ~ 'n.s.', 
-                                te_dist_pval < .05/4 & te_dist_pval >= .01/4 ~ '*',
-                                te_dist_pval < .01/4 & te_dist_pval >= .001/4 ~ '**',
-                                te_dist_pval < .001/4 & te_dist_pval > 0 ~ '***'))  
+pval_table <- pval_table %>% mutate(transcription_stars = case_when(transcription_pval >= 0.05 ~ 'n.s.', 
+                                                      transcription_pval < .05 & transcription_pval >= .01 ~ '*',
+                                                      transcription_pval < .01 & transcription_pval >= .001 ~ '**',
+                                                      transcription_pval < .001 & transcription_pval > 0 ~ '***')) %>%
+  mutate(meth_stars = case_when(meth_pval >= 0.05 ~ 'n.s.', 
+                                meth_pval < .05 & meth_pval >= .01 ~ '*',
+                                meth_pval < .01 & meth_pval >= .001 ~ '**',
+                                meth_pval < .001 & meth_pval > 0 ~ '***')) %>%
+  mutate(te_stars = case_when(te_dist_pval >= 0.05 ~ 'n.s.', 
+                                te_dist_pval < .05 & te_dist_pval >= .01 ~ '*',
+                                te_dist_pval < .01 & te_dist_pval >= .001 ~ '**',
+                                te_dist_pval < .001 & te_dist_pval > 0 ~ '***'))  
 
 
 pval_table$transcription_pval <- pval_table$transcription_pval %>% as.character()
@@ -189,3 +189,8 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 p_upset2 <- p_upset2 + patchwork::plot_layout(heights=c(0.75, 0.75, 0.75, 0.75, 1.15))
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\upset_sig_longer.png', plot=p_upset2, dpi='retina', width=5, height=5.25)
 ```
+
+```{r}
+table %>% group_by(HV, TNL) %>% summarize(n=n())
+```
+
