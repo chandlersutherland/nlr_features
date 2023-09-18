@@ -62,7 +62,7 @@ For methylation and TE distance, write a function to calculate a p value for enr
 table[2]
 # first, calculate the observed value
 observe <- function(df, col_index, hv_status){
-  observed <- mean(df%>%filter(HV==hv_status)%>%pull(col_index)%>%na.omit()) - 
+  observed <- mean(df%>%filter(HV==hv_status)%>% pull(col_index)%>%na.omit()) - 
     mean(df %>% filter(HV=='all_genes')%>%pull(col_index)%>%na.omit())
   observed
 }
@@ -78,8 +78,8 @@ permute <- function(df, col_index, hv_status) {
   permutation
 }
 
-p<-permute(table, 3, 'hv')
-o<-observe(table, 3, 'hv')
+#p<-permute(table, 3, 'hv')
+#o<-observe(table, 3, 'hv')
 
 mean(o<p)
 
@@ -96,9 +96,82 @@ p_calc <- function(df, col_index){
   print(paste('hv_p: ', pval, ' nonhv_p:', pval2))
 }
 
-p_calc(table, 4)
-p_calc(table, 5)
+#p_calc(table, 4)
+#p_calc(table, 5)
+p_calc(table, 6)
+p_calc(table, 7)
+p_calc(table, 8)
 ```
+```{r}
+permute_hv <- permute(table, 4, 'hv')
+q=quantile(permute_hv, c(.95, .05))
+observe_hv <- observe(table, 4, 'hv')
+ggplot() + aes(permute_hv)+ geom_histogram(colour="black", fill="white") + geom_vline(xintercept=observe_hv)+
+  geom_vline(aes(xintercept=q[2]), colour="#BB0000", size=1)+
+  geom_vline(aes(xintercept=q[1]), colour="#BB0000", size=1)+
+  #geom_vline(aes(xintercept=observed_nhv), color='blue')+
+  xlab('Permutation difference in means meth hv nlr 1000')
+
+mean(observe_hv > permute_hv)
+```
+
+```{r}
+table <- table %>% drop_na(D)
+observed_nhv <- mean(table$D[table$HV == 'non-hv' ]) - mean(table$D[table$HV == 'all_genes' ])
+
+permutation_nhv = replicate(1000, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'non-hv',]) , replace = FALSE), ] # sample the size of non-hvNLRs
+  sample_large <- table[! rownames(table) %in% rownames(sample_small), ] # sample the rest
+  mean(sample_small$D)-mean(sample_large$D) # get expected mean
+})
+q=quantile(permutation_nhv, c(.05, .95))
+#did this by hand, but want to plot p=.05 on the histo 
+
+p <- ggplot() + aes(permutation_nhv)+ geom_histogram(colour="black", fill="white") + geom_vline(xintercept=observed_nhv)+
+  geom_vline(aes(xintercept=q[2]), colour="#BB0000", size=1)+
+  geom_vline(aes(xintercept=q[1]), colour="#BB0000", size=1)+
+  geom_vline(aes(xintercept=observed_nhv), color='blue')+
+  xlab('Permutation D non-hv 1000')
+p
+
+observed_hv <- mean(table$D[table$HV == 'hv' ]) - mean(table$D[table$HV == 'all_genes' ])
+
+permutation_hv = replicate(1000, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'hv',]) , replace = FALSE), ] # sample the size of non-hvNLRs
+  sample_large <- table[! rownames(table) %in% rownames(sample_small), ] # sample the rest
+  mean(sample_small$D)-mean(sample_large$D) # get expected mean
+})
+q=quantile(permutation_hv, c(.05, .95))
+#did this by hand, but want to plot p=.05 on the histo 
+
+p <- ggplot() + aes(permutation_hv)+ geom_histogram(colour="black", fill="white") + geom_vline(xintercept=observed_hv)+
+  geom_vline(aes(xintercept=q[2]), colour="#BB0000", size=1)+
+  geom_vline(aes(xintercept=q[1]), colour="#BB0000", size=1)+
+  #geom_vline(aes(xintercept=observed_nhv), color='blue')+
+  xlab('Permutation D hv 1000')
+p
+
+#check all NLRs vs Pi 
+observed_nlr <- mean(table$Pi_by_lseff[table$HV != 'all_genes' ]) - mean(table$Pi_by_lseff[table$HV == 'all_genes' ], na.rm=TRUE)
+
+permutation_nlr = replicate(1000, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV != 'all_genes',]) , replace = FALSE), ] # sample the size of NLRs
+  sample_large <- table[! rownames(table) %in% rownames(sample_small), ] # sample the rest
+  mean(sample_small$Pi_by_lseff)-mean(sample_large$Pi_by_lseff) # get expected mean
+})
+q=quantile(permutation_nlr, c(.05, .95))
+#did this by hand, but want to plot p=.05 on the histo 
+
+p <- ggplot() + aes(permutation_nlr)+ geom_histogram(colour="black", fill="white") + geom_vline(xintercept=observed_nlr)+
+  geom_vline(aes(xintercept=q[2]), colour="#BB0000", size=1)+
+  geom_vline(aes(xintercept=q[1]), colour="#BB0000", size=1)+
+  #geom_vline(aes(xintercept=observed_nhv), color='blue')+
+  xlab('Permutation Pi NLR 1000')
+p
+
+mean(observed_nlr < permutation_nlr)
+```
+
 
 For TE distance, also check the median: 
 ```{r}
@@ -160,7 +233,7 @@ clean_samples <- lapply(names(samples), function(x) clean(samples[[x]]))
 names(clean_samples) <- c('SRR17281085', 'SRR17281086', 'SRR17281087', 'SRR17281088')
 ```
 ```{r}
-lapply(names(clean_samples), function(x) p_calc(clean_samples[[x]], 3))
+#lapply(names(clean_samples), function(x) p_calc(clean_samples[[x]], 3))
 ```
 
 The kernel density estimation computes kernel density estimates. Often shortened to KDE, it’s a technique that let’s you create a smooth curve given a set of data. So here, it's taking in my # of mappable CG sites per HV gene, and returning a density curve. 
@@ -169,15 +242,9 @@ The approxfun function returns a list of points which linearly interpolate given
 
 Repeat the CG count weighted permutation test on all four samples: 
 ```{r}
-# calculate mean difference for all sampled dsns
-get_mean_difference <- function(x) {
-  x_not <- all_genes[!all_genes %in% x]
-  x_srs <- test[test$Gene %in% x, ]
-  x_not_srs <- test[! test$Gene %in% x, ]
-  return(mean(x_srs$mean_percent_methylation)-mean(x_not_srs$mean_percent_methylation))
-}
-
+#create a sampled gene list weighted by counts 
 density_sample <- function(df, hv_status){
+  #df <- df %>% drop_na()
   split_df <- df %>% filter(HV == hv_status)
   
   #calculate CG count density KDE function 
@@ -197,33 +264,52 @@ density_sample <- function(df, hv_status){
   }
 
 test_nhv <- density_sample(clean_samples[[1]], 'non-hv')
+table <- clean_samples[[1]]
 
-pval <- function(sampled_df, hv_status, observed){
-  x <- lapply(sampled_df, get_mean_difference)
-  df_x <- t(data.frame(x))
-  p_val <- mean(df_x[,1] < observed)
+#write function that gets the difference in means between the permuted sample and the actual 
+get_mean_difference <- function(gene_list, table) {
+  permute_mean <- table %>% filter(Gene %in% gene_list) %>% pull(mean_percent_methylation) %>% mean()
+  actual_mean <- table %>% filter(!Gene %in% gene_list)  %>% pull(mean_percent_methylation) %>% mean()
+  return(actual_mean-permute_mean)
+}
+
+
+get_mean_difference(test_nhv[[1]], clean_samples[[1]])
+mean_diff <- actual_mean-permute_mean
+
+#calculate the pvalue 
+pval <- function(sampled_df, table, hv_status, observed){
+  differences <- list()
+  for (x in 1:10000) {
+    x <- get_mean_difference(sampled_df[[x]], table)
+    differences <- append(differences, x)
+    }
+  
+  p_val <- mean(differences < observed)
   
   return(p_val)
 }
+
+pval(test_nhv, 'non-hv', observed_nhv)
 ```
 
 ```{r}
 hv_sampled_genes <- lapply(names(clean_samples), function(x) density_sample(clean_samples[[x]], 'hv'))
 observed_hv <- lapply(names(clean_samples), function(x) observe(clean_samples[[x]], 3, 'hv'))
 
-pval(hv_sampled_genes[[1]], 'hv', observed_hv[[1]])
-pval(hv_sampled_genes[[2]], 'hv', observed_hv[[2]])
-pval(hv_sampled_genes[[3]], 'hv', observed_hv[[3]])
-pval(hv_sampled_genes[[4]], 'hv', observed_hv[[4]])
+pval(hv_sampled_genes[[1]], clean_samples[[1]], 'hv', observed_hv[[1]])
+pval(hv_sampled_genes[[2]], clean_samples[[2]], 'hv', observed_hv[[2]])
+pval(hv_sampled_genes[[3]], clean_samples[[3]], 'hv', observed_hv[[3]])
+pval(hv_sampled_genes[[4]], clean_samples[[4]], 'hv', observed_hv[[4]])
 ```
 
 ```{r}
 nhv_sampled_genes <- lapply(names(clean_samples), function(x) density_sample(clean_samples[[x]], 'non-hv'))
 observed_nhv <- lapply(names(clean_samples), function(x) observe(clean_samples[[x]], 3, 'non-hv'))
 
-pval(nhv_sampled_genes[[1]], 'non-hv', observed_nhv[[1]])
-pval(nhv_sampled_genes[[2]], 'non-hv', observed_nhv[[2]])
-pval(nhv_sampled_genes[[3]], 'non-hv', observed_nhv[[3]])
-pval(nhv_sampled_genes[[4]], 'non-hv', observed_nhv[[4]])
+pval(nhv_sampled_genes[[1]], clean_samples[[1]], 'non-hv', observed_nhv[[1]])
+pval(nhv_sampled_genes[[2]], clean_samples[[2]], 'non-hv', observed_nhv[[2]])
+pval(nhv_sampled_genes[[3]], clean_samples[[3]], 'non-hv', observed_nhv[[3]])
+pval(nhv_sampled_genes[[4]], clean_samples[[4]], 'non-hv', observed_nhv[[4]])
 ```
 
