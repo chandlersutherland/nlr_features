@@ -82,28 +82,28 @@ Per domain plots
 ```{r}
 pi_exp <- expression(pi)
 p7 <- ggplot(col_popgen)+
-  geom_boxplot( aes(x=domain, y=Pi_bp, fill=HV), lwd=0.25, outlier.size=0.1)+
+  geom_boxplot( aes(x=domain, y=Pi_site, fill=HV), lwd=0.25, outlier.size=0.1)+
     scale_fill_manual(values=c('#00BFC4', '#F8766D'))+
   theme_classic()+
   ylab(pi_exp)+
-  ylim(0, 0.08)+
+  ylim(0, 0.09)+
   geom_signif(stat='identity', 
                       data=data.frame(x = c(0.75, 1.75, 2.75, 3.75, 4.75),
                       xend=c(1.25, 2.25, 3.25, 4.25, 5.25),
-                      y = c(0.07, 0.07, 0.07, 0.07, 0.07),
-                      annotation2 = c('**', '***', ' *** ', ' ** ', '  **  ')), 
+                      y = c(0.085, 0.085, 0.085, 0.085, 0.085),
+                      annotation2 = c('***',  'n.s.', ' ** ', ' *** ', '  ***  ')), 
               aes(x=x, xend=xend, y=y, yend=y, annotation=annotation2, textsize=2.5))+
     theme(legend.position='none', text=element_text(size=10), axis.title.x = element_blank())
   
 p7 
 
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\pi_domain.png', plot=p7, dpi='retina', width=2.3, height=1.5)
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\pi_domain.png', plot=p7, dpi='retina', width=2.4, height=1.5)
 
-compare_means(Pi~HV, all %>% filter(domain=='CDS'), method='wilcox.test', paired=FALSE)$p*5
-compare_means(Pi~HV, all %>% filter(domain=='NBARC'), method='wilcox.test', paired=FALSE)$p*5
-compare_means(Pi~HV, all %>% filter(domain=='CC'), method='wilcox.test', paired=FALSE)$p*5
-compare_means(Pi~HV, all %>% filter(domain=='TIR'), method='wilcox.test', paired=FALSE)$p*5
-compare_means(Pi~HV, all %>% filter(domain=='LRR'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(Pi_site~HV, col_popgen %>% filter(domain=='CDS'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(Pi_site~HV, col_popgen %>% filter(domain=='CC'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(Pi_site~HV, col_popgen %>% filter(domain=='TIR'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(Pi_site~HV, col_popgen %>% filter(domain=='NBARC'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(Pi_site~HV, col_popgen %>% filter(domain=='LRR'), method='wilcox.test', paired=FALSE)$p*5
 
 compare_means(Pi~domain, all, method='wilcox.test')
 compare_means(Pi~domain, all %>% filter(HV=='hv'), method='wilcox.test')
@@ -121,11 +121,12 @@ p10 <- ggplot(col_popgen,
     scale_fill_manual(values=c('#00BFC4', '#F8766D'))+
   theme_classic()+
   ylab("Tajima's D")+
+  ylim(-3, 4.4)+
   geom_signif(stat='identity', 
                       data=data.frame(x = c(0.75, 1.75, 2.75, 3.75, 4.75),
                       xend=c(1.25, 2.25, 3.25, 4.25, 5.25),
-                      y = c(3, 3, 3, 3, 3),
-                      annotation2 = c('***', '*', ' * ', ' *** ', '  ***  ')), 
+                      y = c(4.1, 4.1, 4.1, 4.1, 4.1),
+                      annotation2 = c('***', 'n.s.', ' n.s. ', ' *** ', '*')), 
               aes(x=x, xend=xend, y=y, yend=y, annotation=annotation2, textsize=2.5))+
     theme(legend.position='none', text=element_text(size=10), axis.title.x = element_blank())
 
@@ -134,11 +135,12 @@ p10
 
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\D_domain.png', plot=p10, dpi='retina', width=2.2, height=1.5)
 
-compare_means(D~HV, all %>% filter(domain=='NBARC'), method='wilcox.test', paired=FALSE)$p*5
-compare_means(D~HV, all %>% filter(domain=='CC'), method='wilcox.test', paired=FALSE)$p*5
-compare_means(D~HV, all %>% filter(domain=='TIR'), method='wilcox.test', paired=FALSE)$p*5
-compare_means(D~HV, all %>% filter(domain=='LRR'), method='wilcox.test', paired=FALSE)$p*5
-compare_means(D~HV, all %>% filter(domain=='CDS'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(D~HV, col_popgen %>% filter(domain=='CDS'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(D~HV, col_popgen %>% filter(domain=='CC'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(D~HV, col_popgen %>% filter(domain=='TIR'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(D~HV, col_popgen %>% filter(domain=='NBARC'), method='wilcox.test', paired=FALSE)$p*5
+compare_means(D~HV, col_popgen %>% filter(domain=='LRR'), method='wilcox.test', paired=FALSE)$p*5
+
 
 compare_means(D~domain, all, method='wilcox.test')
 compare_means(D~domain, all %>% filter(HV=='hv'), method='wilcox.test')
@@ -148,34 +150,35 @@ kruskal.test(D ~ domain, data = all)
 kruskal.test(D ~ domain, data = all%>%filter(HV=='hv'))
 kruskal.test(D ~ domain, data = all%>%filter(HV=='non-hv'))
 ```
+
 Pi vs Tajima's D plot 
 ```{r}
 #calculate top 5% threshold for Pi and Tajima's D 
-top_pi <- all_gene %>% pull(Pi) %>% quantile(c(.95), na.rm=TRUE)
+top_pi <- all_gene %>% pull(Pi_by_lseff) %>% quantile(c(.95), na.rm=TRUE)
 top_D <- all_gene %>% pull(D) %>% quantile(c(.95), na.rm=TRUE)
-all_gene %>% filter(HV != 'all_genes') %>% filter(Pi > top_pi & D > top_D)
+all_gene %>% filter(HV != 'all_genes') %>% filter(Pi_by_lseff > top_pi & D > top_D)
 
 
 p <-ggplot()+
-  geom_density2d(all_gene, mapping=aes(x=Pi, y=D, linetype='Genome Distribution'), bins=20, color='grey',  lwd=0.5)+
+  geom_density2d(all_gene, mapping=aes(x=Pi_by_lseff, y=D, linetype='Genome Distribution'), bins=20, color='grey',  lwd=0.5)+
   geom_segment(x=top_pi, 
                xend=top_pi, 
                y=max(all_gene$D, na.rm=TRUE), 
                yend=-3.1, color='black', 
                aes(linetype='95th Percentile'), lwd=0.35)+
   geom_segment(x=-1, 
-               xend=max(all_gene$Pi, na.rm=TRUE), 
+               xend=max(all_gene$Pi_by_lseff, na.rm=TRUE), 
                y=top_D, 
                yend=top_D, color='black', 
                aes(linetype='95th Percentile'), lwd=0.35)+
-  geom_point(data=to_plot, aes(x=Pi_bp, y=D, color=HV), size=0.5)+
+  geom_point(data=to_plot, aes(x=Pi_site, y=D, color=HV), size=0.5)+
   #geom_text(data=to_plot, aes(x=Pi_bp, y=D, label=name), size=3)+
   scale_linetype_manual(values=c('Genome Distribution' = 1,  '95th Percentile'=2))+
   scale_color_manual(values = c("hv" = "#F8766D",
                                 "non-hv" = '#00BFC4'))+
-  guides(linetype=guide_legend(override.aes = list(linetype = c(1, 2),
+  guides(linetype=guide_legend(override.aes = list(linetype = c(2, 1),
                                                    shape=c(NA, NA), 
-                                                   color=c('grey', 'black')), 
+                                                   color=c('black', 'grey')), 
                                order=1),
          color=guide_legend(override.aes = list(linetype = c(0, 0), 
                                                 shape=c(16, 16)), 

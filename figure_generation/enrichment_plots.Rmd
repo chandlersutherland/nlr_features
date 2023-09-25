@@ -46,7 +46,8 @@ ranking <- function(table, x){
 exp_rank <- ranking(table, 'log2_TPM')
 meth_rank <- ranking(table, "meth_percentage")
 te_rank <- ranking(table, 'te_dist')
-pi_rank <- ranking(table, 'Pi')
+pi_lseff_rank <- ranking(table, 'Pi_by_lseff')
+pi_bp_rank <- ranking(table, 'Pi_by_dna')
 D_rank <- ranking(table, 'D')
 
 #write.table(exp_rank, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\exp_rank.csv', sep=',')
@@ -145,4 +146,36 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 ```
 
 
+
+```{r}
+#methylation enrichment plot 
+p4 <- ggplot(pi_lseff_rank, aes(x = norm_rank, col = set)) +
+  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.25)
+
+#Define axes 
+ymap = c(2.6, -0.1)
+
+#Plot
+pi_lseff_p <- p4 + 
+  geom_segment(data= pi_lseff_rank %>% filter(set=='hv'), aes(
+      x= norm_rank,
+  		y = 500,
+  		xend = norm_rank,
+  		yend = 550), alpha = 0.75, linewidth=0.25) +
+  	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+geom_segment(data= pi_lseff_rank %>% filter(set=='non-hv'), aes(
+      x= norm_rank,
+  		y = ymap[2],
+  		xend = norm_rank,
+  		yend = ymap[2] -50), alpha = 0.75, linewidth=0.25) +
+  	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+  theme_classic()+
+  theme(legend.position='none', text=element_text(size=10), 
+        axis.title=element_blank())+
+  annotate("text", x = 0.22, y = 1.6, label = "*", color='#F8766D', size=3) #greatest p value for hvNLR methylation weighted by GC content is .02, hvnlr is .55 (see permutations.Rmd for calculation)
+
+pi_lseff_p
+```
 

@@ -35,6 +35,8 @@ table[index, 5] = '10444121'
 table[index, 6] = '-'
 table[index, 7] = 'singleton'
 table[index, 18] = 'C' 
+
+table %>% filter(gene=='AT4G11170')
 ```
 
 QC
@@ -105,15 +107,16 @@ paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " 
 #popgen stats from egglib generated on NLRome coding sequences as described in pi_calculation.ipynb 
 NLR_popgen <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//egglib_results.tsv") %>% 
   filter(domain=='cds')%>%
-  mutate(Pi=Pi_raw/dna_aln) %>%
-  subset(select=c('Gene', 'D','Pi'))
+  mutate(Pi_by_dna=Pi_raw/dna_aln)%>%
+  mutate(Pi_by_lseff=Pi_raw/lseff) %>%
+  subset(select=c('Gene', 'D','Pi_by_dna', 'Pi_by_lseff'))
   
 NLR_popgen 
 
 #rest of the genome from vcf as described in whole_genome_popgen.ipynb
-whole_genome <- read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//cds_egglib_wholegenome2.csv") %>% 
-  subset(select=c('gene', 'Pi_by_dna', 'D')) %>%
-  rename('Pi_by_dna'='Pi', 'gene'='Gene') %>% distinct()
+whole_genome <- read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//cds_egglib_all.csv") %>% 
+  subset(select=c('gene', 'Pi_by_dna', 'Pi_by_lseff', 'D')) %>%
+  rename('Gene'='gene') %>% distinct()
 
 whole_genome 
 
