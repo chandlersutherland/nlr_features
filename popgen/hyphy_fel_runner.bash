@@ -14,12 +14,12 @@ module load python
 module load parallel 
 source activate e14 
 
+#goal: run FEL in parallel on all NLR clades 
 base=/global/scratch/users/chandlersutherland/e14/popgen/clades
-#output_csv=/global/scratch/users/chandlersutherland/e14/popgen/hyphy_fubar.csv
 clade=$(cat /global/scratch/users/chandlersutherland/e14/popgen/clades.txt)
-#echo "Clade,n_codons,n_pos_sites" > $output_csv
 
 FEL_RUN(){
+	#function that takes in clade name, finds alignment and tree file, creates log file, then runs FEL 
 	alignment=${base}/${1}/popgenome/${1}.pal2nal.fas
 	tree=${base}/${1}/RAxML*.out
 	
@@ -28,40 +28,10 @@ FEL_RUN(){
 	
 	#actually run hyphy in multithreading mode to hopefully speed up 
 	hyphy fel CPU=4 --alignment ${alignment} --tree ${tree} | tee -a $log_file
-	
-	#parse out relevant values  
-	#n_sites=$(grep 'FUBAR inferred' $log_file | sed 's@^[^0-9]*\([0-9]\+\).*@\1@') 
-	#n_codons=$(grep 'Loaded a multiple sequence alignment' $log_file | sed -r 's/([^0-9]*([0-9]*)){2}.*/\2/')
-	
-	#write to csv with clade info 
-	#echo "${1},${n_codons},${n_sites}" >> $output_csv
 	echo "finished $1"
 }
 
 export base=$base
-export output_csv=$output_csv 
 export -f FEL_RUN
 
 parallel FEL_RUN ::: $clade 
-
-#for each clade, identify the codon alignment file and tree, then run hyphy busted
-#while read clade
-#do 
-	#name inputs 
-#	alignment=${base}/${clade}/popgenome/${clade}.pal2nal.fas
-#	tree=${base}/${clade}/RAxML*.out
-	
-#	log_file=${base}/${clade}/hyphy_busted.log
-#	echo "Running Hyphy on $clade"
-	
-	#actually run hyphy in multithreading mode to hopefully speed up 
-#	hyphy  busted CPU=24 --alignment ${alignment} --tree ${tree} | tee -a $log_file
-	
-	
-	#parse out p value  
-#	p=$(grep 'Likelihood ratio test' $log_file | grep -Eo '[+-]?[0-9]+([.][0-9]+)?') 
-	
-	#write to csv with clade info 
-#	echo "${clade},${p}" >> $output_csv
-#	echo "finished $clade"
-#done < /global/scratch/users/chandlersutherland/e14/popgen/clades.txt 
