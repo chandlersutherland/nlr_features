@@ -14,10 +14,13 @@ module load python
 module load parallel 
 source activate e14 
 
+#goal: run MEME in parallel on all NLR clades 
+
 base=/global/scratch/users/chandlersutherland/e14/popgen/clades
 clade=$(cat /global/scratch/users/chandlersutherland/e14/popgen/clades.txt)
 
 MEME_RUN(){
+	#function that takes in clade name, finds alignment and tree file, creates a log file, then runs meme
 	alignment=${base}/${1}/popgenome/${1}.pal2nal.fas
 	tree=${base}/${1}/RAxML*.out
 	
