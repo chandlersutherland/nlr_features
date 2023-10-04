@@ -120,8 +120,4 @@ r10
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\bimodal2.png', plot=r10, dpi='retina', width=7, height=4)
 ```
 
-```{r}
-plot_df %>% arrange(Gene)
-plot_df 
-```
 
