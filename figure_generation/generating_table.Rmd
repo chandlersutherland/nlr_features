@@ -5,6 +5,7 @@ date: '2022-08-25'
 output: html_document
 ---
 
+Combine data from three features and popgen results to create a mega table 
 ```{r}
 knitr::opts_knit$set(root.dir = 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14')
 library(tidyverse)
@@ -103,8 +104,9 @@ nHV_count <- sum(all_table$HV == 'non-hv')
 
 paste("There are ", HV_count, "HV genes in my working table and ", nHV_count, " non-HV genes in my working table.")
 ```
+
 ```{r}
-#popgen stats from egglib generated on NLRome coding sequences as described in pi_calculation.ipynb 
+#popgen stats from egglib generated on NLRome coding sequences as described in egglib_nlr.ipynb 
 NLR_popgen <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//egglib_results.tsv") %>% 
   filter(domain=='cds')%>%
   mutate(Pi_by_dna=Pi_raw/dna_aln)%>%
@@ -113,7 +115,7 @@ NLR_popgen <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scrat
   
 NLR_popgen 
 
-#rest of the genome from vcf as described in whole_genome_popgen.ipynb
+#rest of the genome from vcf as described in egglib_whole_genome.ipynb
 whole_genome <- read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//cds_egglib_all.csv") %>% 
   subset(select=c('gene', 'Pi_by_dna', 'Pi_by_lseff', 'D')) %>%
   rename('Gene'='gene') %>% distinct()
