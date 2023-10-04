@@ -91,3 +91,9 @@ compare_means(te_dist~HV, NLR_table, method = 'wilcox.test', paired = FALSE)
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\te.png', plot=p3, dpi='retina', width=2, height=1.5)
 ```
 
+```{r}
+#perform fisher's test on HV status vs internal TE
+NLR_table3 <- NLR_table3 %>% mutate('int_te'=if_else(te_dist == 0, 'TRUE', 'FALSE'))
+fisher.test(NLR_table3$HV, NLR_table3$int_te)
+```
+

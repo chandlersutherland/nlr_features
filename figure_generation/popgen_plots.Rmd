@@ -31,7 +31,6 @@ col_popgen <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scrat
   mutate(PiNPiS = PiN/PiS) %>%
   mutate(domain=recode(domain, 'cc' = "CC", 'tir'="TIR", 'nbarc'='NBARC', 'lrr'='LRR', 'cds'='CDS'))
 
-
 col_popgen$domain <- factor(col_popgen$domain, levels=c('CDS', 'CC', 'TIR', 'NBARC', 'LRR'))
 col_popgen$HV <- factor(col_popgen$HV, levels=c('non-hv', 'hv'))
 
@@ -71,6 +70,34 @@ merged$HV <- factor(merged$HV , levels=c("all_genes", "non-hv", "hv"))
 
 #read in all gene data 
 all_gene <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
+
+#read in hyphy positive selection results 
+fel_results<-read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//fel_results.csv")%>%
+  rename('Clade'='clade')
+
+meme_results<-read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//meme_results.csv")%>%
+  rename('Clade'='clade')
+
+clades <- read.table(file='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Atha_NLRome_GeneTable.txt', header=1) %>% 
+  filter(Ecotype=='ATHALIANA') %>% 
+  separate(Gene, c(NA, 'Gene'))%>%
+  subset(select=c('Gene', 'Clade', 'HV')) %>% 
+  distinct() %>% 
+  mutate(HV=recode(HV, '0'='non-hv', '1'='hv'))
+
+pos_sites <- merge(clades, fel_results %>% filter(direction == 'Pos.'), all.x=TRUE) %>% 
+  merge(meme_results, by='Clade', all.x=TRUE) %>% 
+  subset(select=c('Clade', 'Gene', 'HV', 'prop_fel_int_95', 'prop_meme_internal_95'))
+
+pos_sites$HV <- factor(pos_sites$HV , levels=c("non-hv", "hv"))
+
+sites_internal_long <- pos_sites %>% subset(select=c('Gene', 'HV', 'prop_fel_int_95', 'prop_meme_internal_95')) %>% pivot_longer(
+    cols = c(prop_fel_int_95, prop_meme_internal_95), 
+    names_to = "model",
+    values_to = "value") %>%
+  mutate(model=recode(model, 
+                      'prop_fel_int_95' = "Pervasive", 
+                      'prop_meme_internal_95' = 'Episodic'))
 ```
 
 
@@ -338,6 +365,27 @@ mean_percent_increase <- (summary[2,2]-summary[1,2])/summary[1,2]*100
 med_percent_increase <- (summary[2,3]-summary[1,3])/summary[1,3]*100
 print(mean_percent_increase[[1]])
 print(med_percent_increase)
+```
+
+Positive selection sites plot: 
+```{r}
+facet_sites_internal <- sites_internal_long %>%
+  ggplot(aes(x=HV, y=value*100, fill=HV))+
+   geom_beeswarm(size=0.5, aes(color=HV))+
+   geom_signif(comparisons=list(c('hv', 'non-hv')), 
+               map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(16))+
+    scale_color_manual(values=c('#00BFC4','#F8766D'))+
+  theme_classic()+
+  theme(legend.position='none', text=element_text(size=10))+
+  facet_grid(~model, labeller=label_parsed)+
+  ylab('% Codons Under + Selection')+
+  xlab('')+
+  ylim(0, 17)
+
+p_pervasive <- compare_means(value~HV, sites_internal_long %>% filter(model=='Pervasive'), method='wilcox.test', paired=FALSE)$p
+p_episodic <- compare_means(value~HV, sites_internal_long %>% filter(model=='Episodic'), method='wilcox.test', paired=FALSE)$p
+
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\sites_internal.png', plot=facet_sites_internal, dpi='retina', width=3.5, height=2.5)
 ```
 
 # Figure 5: 
