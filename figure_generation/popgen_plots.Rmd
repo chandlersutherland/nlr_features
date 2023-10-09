@@ -20,6 +20,7 @@ library(ggsignif)
 library(ggpubr)
 library(ggbeeswarm)
 require(tidyverse)
+library(openxlsx)
 ```
 
 Gather and clean the necessary datasets 
@@ -40,6 +41,12 @@ names <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//c
   distinct()
 col_popgen <- merge(col_popgen, names, all.x=TRUE)
 
+popgen_per_domain <- col_popgen %>% subset(select=c('Gene', 'D', 'PiN', 'PiS', 'clade', 'dna_aln', 'domain', 'lseff', 'HV', 'Pi_site', 'PiNPiS', 'name'))
+write.xlsx(popgen_per_domain, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\popgen_per_domain.xlsx')
+```
+
+
+```{r}
 #filter to just CDS and add sample sizes to the label 
 to_plot <- col_popgen %>% 
   filter(domain=='CDS')%>%
@@ -49,7 +56,10 @@ to_plot <- col_popgen %>%
 
 labels <- to_plot$label %>% unique()
 to_plot$label <- factor(to_plot$label, levels=c(labels[1], labels[2]))
+```
 
+
+```{r}
 #read in sliding window analysis 
 x <- to_plot %>% subset(select=c('Gene', 'dna_aln')) %>% rename('gene_length'='dna_aln')
 vig_slider <- read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//egglib_vignette_window_stats.csv") %>% 
@@ -70,7 +80,10 @@ merged$HV <- factor(merged$HV , levels=c("all_genes", "non-hv", "hv"))
 
 #read in all gene data 
 all_gene <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
+```
 
+
+```{r}
 #read in hyphy positive selection results 
 fel_results<-read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//fel_results.csv")%>%
   rename('Clade'='clade')
@@ -88,6 +101,8 @@ clades <- read.table(file='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\
 pos_sites <- merge(clades, fel_results %>% filter(direction == 'Pos.'), all.x=TRUE) %>% 
   merge(meme_results, by='Clade', all.x=TRUE) %>% 
   subset(select=c('Clade', 'Gene', 'HV', 'prop_fel_int_95', 'prop_meme_internal_95'))
+
+write.xlsx(pos_sites, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\positive_selection.xlsx')
 
 pos_sites$HV <- factor(pos_sites$HV , levels=c("non-hv", "hv"))
 
@@ -226,6 +241,8 @@ p <-ggplot()+
 p
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\pi_v_d.png', plot=p, dpi='retina', width=5.75, height=2.75)
 ```
+
+
 
 # Figure 4: 
 PiN and PiS plots 
