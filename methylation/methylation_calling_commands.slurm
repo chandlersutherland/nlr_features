@@ -13,8 +13,8 @@
 cd /global/home/users/chandlersutherland/nlr_features/methylation
 
 #Define the input directory, with fastq files ready for trimming
-trim_input="/global/scratch/users/chandlersutherland/e14/bs_fastq_files/williams_drdd"
-trim_output="/global/scratch/users/chandlersutherland/e14/trim_williams/drdd"
+trim_input="/global/scratch/users/chandlersutherland/e14/twim_williams/williams_tissues"
+trim_output="/global/scratch/users/chandlersutherland/e14/trim_williams/williams_tissues"
 
 mkdir -p $trim_output
 
@@ -23,7 +23,7 @@ while read sample; do sbatch --job-name=$sample.trim_galore --export=trim_input=
 
 #run bismark alignment 
 genome="/global/scratch/users/chandlersutherland/phytozome/Athaliana/Araport11/assembly"
-bismark_output="/global/scratch/users/chandlersutherland/e14/bismark/bam_files/drdd"
+bismark_output="/global/scratch/users/chandlersutherland/e14/bismark/bam_files/tissues"
 
 mkdir -p $bismark_output
 
@@ -36,7 +36,7 @@ while read sample; do sbatch --job-name=$sample.nlr_coverage --export=coverage_i
 /global/home/users/chandlersutherland/nlr_features/methylation/samtools_coverage_runner.bash; done < samples.txt
 
 #deduplicate files + extraction 
-extraction_output="/global/scratch/users/chandlersutherland/e14/bismark/extraction/drdd"
+extraction_output="/global/scratch/users/chandlersutherland/e14/bismark/extraction/tissues"
 
 mkdir -p $extraction_output
 
@@ -54,7 +54,7 @@ while read sample; do sbatch --job-name=$sample.bw --export=bigwig_input=$bigwig
 /global/home/users/chandlersutherland/nlr_features/methylation/bed_2_bw.bash; done < samples.txt 
 
 #calculate the per gene methylation percentage for each context 
-cov_dir='/global/scratch/users/chandlersutherland/e14/bismark/extraction/drdd/bedGraph_highcov'
+cov_dir='/global/scratch/users/chandlersutherland/e14/bismark/extraction/tissues/bedGraph_highcov'
 gene_positions='/global/scratch/users/chandlersutherland/Athaliana/Atha_genes.bed'
 
 
