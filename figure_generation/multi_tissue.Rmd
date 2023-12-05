@@ -1,0 +1,502 @@
+---
+title: "tissue_specific_expr"
+author: "Chandler Sutherland"
+date: "2023-11-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(openxlsx)
+library(ggsignif)
+library(ggpubr)
+library(patchwork)
+library(ggbeeswarm)
+library(introdataviz)
+library(singscore)
+library(GSEABase)
+```
+
+Goal: explore tissue specific expression using grey's processed data from Megner 2022. 
+```{r}
+#load Grey's data, which has the Megner 2022 expression as TPM values 
+PDS5 <- read_csv("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\A_thal_genes_PDS5_enrich.csv")
+#load all gene table 
+all_gene <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
+
+#merge and exclude unmappable NLRs 
+everything <- merge(all_gene, PDS5, by.x='Gene', by.y='gene')
+unmappable <- c('AT1G58807', 'AT1G58848', 'AT1G59124', 'AT1G59218') 
+```
+
+```{r}
+#fitler and shape column names of Megner 2020 tissue specific expression 
+names <- everything %>% colnames()
+rel <- everything %>% subset(select=append(names[1:8], names[45:98])) %>% filter(!Gene %in% unmappable)
+
+#pivot longer 
+rel_long <- rel %>% pivot_longer(cols=names[45:98], names_to=c('tissue')) %>% mutate(log2_TPM_tissue=log2(value+1))
+
+#hv only 
+hv_rel <- rel_long %>% filter(HV != 'all_genes')
+hv_rel$HV <- factor(hv_rel$HV, levels=c('non-hv', 'hv'))
+
+
+#calculate p values, benjamini-hochberg correction 
+sig_table <- compare_means(log2_TPM_tissue~HV, hv_rel,  method='wilcox.test', paired=FALSE, group.by='tissue', p.adjust.method='BH')
+p_order <- sig_table %>% arrange(p.adj) %>% pull(tissue)
+p_mat <- sig_table %>% subset(select=c(tissue, p.adj)) %>% column_to_rownames('tissue')%>% arrange(p.adj)
+
+hv_rel$tissue <- factor(hv_rel$tissue, levels=p_order)
+```
+
+```{r}
+#extensive renaming of tissue 
+hv_rel <- hv_rel %>% mutate(clean_tissue=case_match(tissue, 
+                      'adult, adult vascular leaf, not applicable' ~ 'adult vascular leaf', 
+                      'adult, cauline leaf, not applicable' ~ 'cauline leaf', 
+                      'adult, cotyledon, not applicable' ~ 'adult cotyledon', 
+                      'adult, fruit septum, not applicable' ~ 'fruit septum', 
+                      'adult, fruit valve, not applicable' ~ 'fruit valve', 
+                      'adult, petiole, rosette leaf 7 petiole' ~ 'rosette leaf 7 petiole', 
+                      'adult, root, not applicable' ~ 'adult root', 
+                      'adult, rosette leaf, rosette leaf 1' ~ 'rosette leaf 1', 
+                      'adult, rosette leaf, rosette leaf 10' ~ 'rosette leaf 10', 
+                      'adult, rosette leaf, rosette leaf 11' ~ 'rosette leaf 11', 
+                      'adult, rosette leaf, rosette leaf 12' ~ 'rosette leaf 12', 
+                      'adult, rosette leaf, rosette leaf 2' ~ 'rosette leaf 2', 
+                      'adult, rosette leaf, rosette leaf 3' ~ 'rosette leaf 3', 
+                      'adult, rosette leaf, rosette leaf 4' ~ 'rosette leaf 4', 
+                      'adult, rosette leaf, rosette leaf 5' ~ 'rosette leaf 5', 
+                      'adult, rosette leaf, rosette leaf 6' ~ 'rosette leaf 6', 
+                      'adult, rosette leaf, rosette leaf 7' ~ 'rosette leaf 7', 
+                      'adult, rosette leaf, rosette leaf 7 distal part' ~ 'rosette leaf 7 distal part', 
+                      'adult, rosette leaf, rosette leaf 7 proximal part' ~ 'rosette leaf 7 proximal part', 
+                      'adult, rosette leaf, rosette leaf 8' ~ 'rosette leaf 8', 
+                      'adult, rosette leaf, rosette leaf 9' ~ 'rosette leaf 9', 
+                      'adult, stem internode, second internode' ~ 'stem internode 2', 
+                      'adult, stem node, first node' ~ 'stem node 1', 
+                      'callus, plant callus, not applicable' ~ 'callus', 
+                      'cell culture, root, not applicable' ~ 'cell culture root', 
+                      'dry seed stage, seed, not applicable' ~ 'dry seed', 
+                      'embryo stage 10, seed, not applicable' ~ 'embryo stage 10', 
+                      'embryo stage 6, seed, not applicable' ~ 'embryo stage 6', 
+                      'embryo stage 7, seed, not applicable' ~ 'embryo stage 7', 
+                      'embryo stage 8, seed, not applicable' ~ 'embryo stage 8', 
+                      'embryo stage 9, seed, not applicable' ~ 'embryo stage 9',
+                      'flower stage 10, flower, not applicable' ~ 'flower stage 10', 
+                      'flower stage 11, flower, not applicable' ~ 'flower stage 11', 
+                      'flower stage 12, flower, not applicable' ~ 'flower stage 12', 
+                      'flower stage 13, flower, not applicable' ~ 'flower stage 13', 
+                      'flower stage 15, carpel, not applicable' ~ 'flower stage 15 carpel', 
+                      'flower stage 15, flower pedicel, not applicable' ~ 'flower stage 15 pedicel', 
+                      'flower stage 15, flower, not applicable' ~ 'flower stage 15', 
+                      'flower stage 15, petal, not applicable' ~ 'flower stage 15 petal', 
+                      'flower stage 15, pollen, not applicable' ~ 'flower stage 15 pollen', 
+                      'flower stage 15, sepal, not applicable' ~ 'flower stage 15 sepal', 
+                      'flower stage 15, stamen, not applicable' ~ 'flower stage 15 stamen', 
+                      'flower stage 9, flower, not applicable' ~ 'flower stage 9', 
+                      'seed imbibition stage, seed, not applicable' ~ 'seed imbibition stage', 
+                      'seedling, cotyledon, not applicable' ~ 'cotyledon', 
+                      'seedling, hypocotyl, not applicable' ~ 'hypocotyl', 
+                      'seedling, mixed shoot apical meristem, cotyledon and first leaves, not applicable' ~ 'mixed shoot apical meristem', 
+                      'seedling, root tip, not applicable' ~ 'seedling root tip', 
+                      'seedling, root tip, upper zone' ~ 'seedling root tip; upper zone', 
+                      'silique stage 1, silique, not applicable' ~ 'silique stage 1', 
+                      'silique stage 2, silique, not applicable' ~ 'silique stage 2', 
+                      'silique stage 3, silique, not applicable' ~ 'silique stage 3', 
+                      'silique stage 4, silique, not applicable' ~ 'silique stage 4', 
+                      'silique stage 5, silique, not applicable' ~ 'silique stage 5') 
+                  ) %>% 
+  mutate(tissue_group_1 = case_match(tissue, 
+                      'adult, adult vascular leaf, not applicable' ~ 'vegetative', 
+                      'adult, cauline leaf, not applicable' ~ 'vegetative', 
+                      'adult, cotyledon, not applicable' ~ 'vegetative', 
+                      'adult, fruit septum, not applicable' ~ 'reproductive', 
+                      'adult, fruit valve, not applicable' ~ 'reproductive', 
+                      'adult, petiole, rosette leaf 7 petiole' ~ 'vegetative', 
+                      'adult, root, not applicable' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 1' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 10' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 11' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 12' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 2' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 3' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 4' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 5' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 6' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 7' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 7 distal part' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 7 proximal part' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 8' ~ 'vegetative', 
+                      'adult, rosette leaf, rosette leaf 9' ~ 'vegetative', 
+                      'adult, stem internode, second internode' ~ 'vegetative', 
+                      'adult, stem node, first node' ~ 'vegetative', 
+                      'callus, plant callus, not applicable' ~ 'synthetic', 
+                      'cell culture, root, not applicable' ~ 'synthetic', 
+                      'dry seed stage, seed, not applicable' ~ 'reproductive', 
+                      'embryo stage 10, seed, not applicable' ~ 'reproductive', 
+                      'embryo stage 6, seed, not applicable' ~ 'reproductive', 
+                      'embryo stage 7, seed, not applicable' ~ 'reproductive', 
+                      'embryo stage 8, seed, not applicable' ~ 'reproductive', 
+                      'embryo stage 9, seed, not applicable' ~ 'reproductive',
+                      'flower stage 10, flower, not applicable' ~ 'reproductive', 
+                      'flower stage 11, flower, not applicable' ~ 'reproductive', 
+                      'flower stage 12, flower, not applicable' ~ 'reproductive', 
+                      'flower stage 13, flower, not applicable' ~ 'reproductive', 
+                      'flower stage 15, carpel, not applicable' ~ 'reproductive', 
+                      'flower stage 15, flower pedicel, not applicable' ~ 'reproductive', 
+                      'flower stage 15, flower, not applicable' ~ 'reproductive', 
+                      'flower stage 15, petal, not applicable' ~ 'reproductive', 
+                      'flower stage 15, pollen, not applicable' ~ 'reproductive', 
+                      'flower stage 15, sepal, not applicable' ~ 'reproductive', 
+                      'flower stage 15, stamen, not applicable' ~ 'reproductive', 
+                      'flower stage 9, flower, not applicable' ~ 'reproductive', 
+                      'seed imbibition stage, seed, not applicable' ~ 'reproductive', 
+                      'seedling, cotyledon, not applicable' ~ 'vegetative', 
+                      'seedling, hypocotyl, not applicable' ~ 'vegetative', 
+                      'seedling, mixed shoot apical meristem, cotyledon and first leaves, not applicable' ~ 'vegetative', 
+                      'seedling, root tip, not applicable' ~ 'vegetative', 
+                      'seedling, root tip, upper zone' ~ 'vegetative', 
+                      'silique stage 1, silique, not applicable' ~ 'reproductive', 
+                      'silique stage 2, silique, not applicable' ~ 'reproductive', 
+                      'silique stage 3, silique, not applicable' ~ 'reproductive', 
+                      'silique stage 4, silique, not applicable' ~ 'reproductive', 
+                      'silique stage 5, silique, not applicable' ~ 'reproductive'))%>% 
+  mutate(tissue_group_2 = case_match(tissue, 
+                      'adult, adult vascular leaf, not applicable' ~ 'leaf', 
+                      'adult, cauline leaf, not applicable' ~ 'leaf', 
+                      'adult, cotyledon, not applicable' ~ 'leaf', 
+                      'adult, fruit septum, not applicable' ~ 'fruit', 
+                      'adult, fruit valve, not applicable' ~ 'fruit', 
+                      'adult, petiole, rosette leaf 7 petiole' ~ 'leaf', 
+                      'adult, root, not applicable' ~ 'root', 
+                      'adult, rosette leaf, rosette leaf 1' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 10' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 11' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 12' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 2' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 3' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 4' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 5' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 6' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 7' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 7 distal part' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 7 proximal part' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 8' ~ 'leaf', 
+                      'adult, rosette leaf, rosette leaf 9' ~ 'leaf', 
+                      'adult, stem internode, second internode' ~ 'stem', 
+                      'adult, stem node, first node' ~ 'stem', 
+                      'callus, plant callus, not applicable' ~ 'synthetic', 
+                      'cell culture, root, not applicable' ~ 'synthetic', 
+                      'dry seed stage, seed, not applicable' ~ 'seed', 
+                      'embryo stage 10, seed, not applicable' ~ 'embryo', 
+                      'embryo stage 6, seed, not applicable' ~ 'embryo', 
+                      'embryo stage 7, seed, not applicable' ~ 'embryo', 
+                      'embryo stage 8, seed, not applicable' ~ 'embryo', 
+                      'embryo stage 9, seed, not applicable' ~ 'embryo',
+                      'flower stage 10, flower, not applicable' ~ 'flower', 
+                      'flower stage 11, flower, not applicable' ~ 'flower', 
+                      'flower stage 12, flower, not applicable' ~ 'flower', 
+                      'flower stage 13, flower, not applicable' ~ 'flower', 
+                      'flower stage 15, carpel, not applicable' ~ 'flower', 
+                      'flower stage 15, flower pedicel, not applicable' ~ 'flower', 
+                      'flower stage 15, flower, not applicable' ~ 'flower', 
+                      'flower stage 15, petal, not applicable' ~ 'flower', 
+                      'flower stage 15, pollen, not applicable' ~ 'flower', 
+                      'flower stage 15, sepal, not applicable' ~ 'flower', 
+                      'flower stage 15, stamen, not applicable' ~ 'flower', 
+                      'flower stage 9, flower, not applicable' ~ 'flower', 
+                      'seed imbibition stage, seed, not applicable' ~ 'seed', 
+                      'seedling, cotyledon, not applicable' ~ 'leaf', 
+                      'seedling, hypocotyl, not applicable' ~ 'stem', 
+                      'seedling, mixed shoot apical meristem, cotyledon and first leaves, not applicable' ~ 'leaf', 
+                      'seedling, root tip, not applicable' ~ 'root', 
+                      'seedling, root tip, upper zone' ~ 'root', 
+                      'silique stage 1, silique, not applicable' ~ 'silique', 
+                      'silique stage 2, silique, not applicable' ~ 'silique', 
+                      'silique stage 3, silique, not applicable' ~ 'silique', 
+                      'silique stage 4, silique, not applicable' ~ 'silique', 
+                      'silique stage 5, silique, not applicable' ~ 'silique'))
+
+#order by p value 
+order <- merge(sig_table, hv_rel, by='tissue') %>% arrange(p.adj) 
+order$clean_tissue <- factor(order$clean_tissue, levels=c(order %>% pull(clean_tissue) %>% unique()))
+```
+
+```{r}
+#build vegetative annotation df 
+vegetative <- order %>% filter(tissue_group_1=='vegetative')
+vegetative$tissue_group_2 <- factor(vegetative$tissue_group_2, levels=c('leaf', 'stem', 'root'))
+group_n <- vegetative %>% pull(clean_tissue) %>% unique() %>% length()
+p_val <- vegetative %>% subset(select=c(tissue_group_2, clean_tissue, p.adj)) %>% arrange(tissue_group_2, p.adj) %>% unique() 
+
+tissue_groups=levels(factor(p_val$tissue_group_2))
+i=0
+annotation_df = ''
+for (tissue in tissue_groups){
+  print(tissue)
+  
+  df <- p_val %>% filter(tissue_group_2==tissue) 
+  group_n <- nrow(df)
+  annot_df <- df %>% 
+    mutate(x=seq(from=1, to=group_n)) %>%
+    mutate(y=9) %>% 
+    mutate(stars=case_when(p.adj < .001 ~'***', 
+                         p.adj >= .001 & p.adj < .01 ~ '**', 
+                         p.adj >= .01 & p.adj < .05 ~ '*', 
+                         p.adj > .05 ~ 'NS'
+                         ))
+  
+  if (i == 0){
+    annotation_df = annot_df
+    } else {
+    annotation_df = rbind(annotation_df, annot_df)
+    }
+  i=+1
+}
+
+```
+
+
+```{r}
+vegetative_plot <- ggplot(vegetative) +
+  introdataviz::geom_split_violin(aes(x = clean_tissue, y = log2(value), fill = HV), 
+                                  alpha=0.4, trim = TRUE, scale="width")+
+  stat_summary(mapping=aes(x = clean_tissue, y = log2(value), fill=HV),
+               fun = median, geom = "point", show.legend = F, shape=21, color='black',
+               position = position_dodge(.175)) +
+  scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_color_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_y_continuous(limits = c(0,10.5), expand = c(0, 0)) +
+  theme_classic(base_size = 10)+
+  ylab('log2(TPM)')+
+  xlab('')+
+  ggtitle('Vegetative Tissue') +
+  facet_grid(~tissue_group_2, scales='free', space='free')+
+  theme(#legend.key.size = unit(.25, "cm"), 
+        #legend.title=element_blank(), 
+        #legend.position='bottom', 
+        text = element_text(size=10), 
+        #legend.spacing.y = unit(0, "cm"), 
+        #legend.spacing.x=unit(0.1, 'cm'), 
+        #legend.margin=margin(-3,0,0,0), 
+        #legend.box.margin=margin(-12,-12,0,0), 
+        axis.text.y=element_text(size=10), 
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
+  geom_text(data=annotation_df, 
+            mapping=aes(x=x, y=y, label=stars, size=3), 
+            show.legend=FALSE)
+
+```
+
+```{r}
+#build reproductive annotation df  
+reproductive <- order %>% filter(tissue_group_1=='reproductive')
+group_n <- reproductive %>% pull(clean_tissue) %>% unique() %>% length()
+p_val <- reproductive %>% subset(select=c(tissue_group_2, clean_tissue, p.adj)) %>% arrange(tissue_group_2, p.adj) %>% unique() 
+
+tissue_groups=levels(factor(p_val$tissue_group_2))
+i=0
+annotation_df = ''
+for (tissue in tissue_groups){
+  print(tissue)
+  
+  df <- p_val %>% filter(tissue_group_2==tissue) 
+  group_n <- nrow(df)
+  annot_df <- df %>% 
+    mutate(x=seq(from=1, to=group_n)) %>%
+    mutate(y=9) %>% 
+    mutate(stars=case_when(p.adj < .001 ~'***', 
+                         p.adj >= .001 & p.adj < .01 ~ '**', 
+                         p.adj >= .01 & p.adj < .05 ~ '*', 
+                         p.adj >= .05 ~ 'NS'
+                         ))
+  
+  if (i == 0){
+    annotation_df = annot_df
+    } else {
+    annotation_df = rbind(annotation_df, annot_df)
+    }
+  i=+1
+}
+```
+
+
+```{r}
+repro_plot <- ggplot(reproductive) +
+  introdataviz::geom_split_violin(aes(x = clean_tissue, y = log2(value), fill = HV), 
+                                  alpha=0.4, trim = TRUE, scale="width")+
+  stat_summary(mapping=aes(x = clean_tissue, y = log2(value), fill=HV),
+               fun = median, geom = "point", show.legend = F, shape=21, color='black',
+               position = position_dodge(.175)) +
+  scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_color_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_y_continuous(limits = c(0,10.5), expand = c(0, 0)) +
+  facet_grid(~tissue_group_2, scales='free', space='free')+
+  geom_text(data=annotation_df, 
+            mapping=aes(x=x, y=y, label=stars), show.legend=F)+
+  theme_classic(base_size = 10)+
+  ylab('log2(TPM)')+
+  xlab('')+
+  ggtitle('Reproductive Tissue') +
+  theme(#legend.key.size = unit(.25, "cm"), 
+        #legend.title=element_blank(), 
+        #legend.position='bottom', 
+        text = element_text(size=10), 
+        #legend.spacing.y = unit(0, "cm"), 
+        #legend.spacing.x=unit(0.1, 'cm'), 
+        #legend.margin=margin(-3,0,0,0), 
+        #legend.box.margin=margin(-12,-12,0,0), 
+        axis.text.y=element_text(size=10), 
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+```
+
+Goal: make a multi-tissue methylation table, plot 
+```{r}
+#Import data and combine 
+
+#step 1: get file paths 
+data_files <- Sys.glob("//wsl.localhost//Ubuntu//home//chandlersutherland//e14_counts//bismark_tissues_results//*.tsv", dirmark = FALSE)
+
+#step 2: write a function to read in 
+importer <- function(file_path){
+  df <- file_path %>% read_tsv(skip=2, col_names=c('Chrom', 'Gene', 'mean_meth_percentage', 'count'))
+  #some inelegant string manipulation to extract info from file name 
+  g <- file_path %>% strsplit('//')
+  interest <- g[[1]][8] %>% strsplit('_')
+  meth_type <- interest[[1]][1]
+  sra <- interest[[1]][5] %>% str_remove('.tsv')
+  df_desired <- df %>% mutate(meth_context = meth_type) %>% mutate(sra = sra)
+  return(df_desired)
+}
+
+#step 3: apply 
+#output: df with a column for methylation type (CpG, CHH, CHG), column for SRA_ID, column for gene, column for meth percentage, column for count 
+dfs <- lapply(data_files, importer)
+meth_by_tissue <- do.call(rbind, dfs)
+
+#step 4: match tissue type to SRA, average between biological replicates 
+metadata <- read_csv('C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//SraRunTable (11).txt') %>% subset(select=c('Run', 'source_name'))
+
+#add hv/non-hv info 
+all_gene <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx") %>% subset(select=c('Gene', 'HV'))
+
+meth_ready <- merge(meth_by_tissue, metadata, by.x='sra', by.y='Run') %>% group_by(Chrom, Gene, meth_context, source_name) %>% summarize(mean_meth_percentage=mean(mean_meth_percentage, na.rm=F)) %>% merge(all_gene, by='Gene')
+
+#done, save file 
+write.csv(meth_ready, 'multi_tissue_methylation.csv')
+```
+
+```{r}
+#compare hv and non-hv CpG Methylation 
+CG <- meth_ready %>% filter(meth_context=='CpG') %>% filter(HV != 'all_genes')
+CG$HV <- factor(CG$HV, levels=c('non-hv', 'hv'))
+p_val <- compare_means(mean_meth_percentage~HV, CG,  method='wilcox.test', paired=FALSE, group.by='source_name', p.adjust.method='BH')
+
+group_n <- nrow(p_val)
+annot_df <- p_val %>% 
+  mutate(x=seq(from=1, to=group_n)) %>%
+  mutate(y=95) %>% 
+  mutate(stars=case_when(p.adj < .001 ~'***', 
+                         p.adj >= .001 & p.adj < .01 ~ '**', 
+                         p.adj >= .01 & p.adj < .05 ~ '*', 
+                         p.adj >= .05 ~ 'NS'
+                         ))
+
+
+methylation_plot <- ggplot(CG) +
+  introdataviz::geom_split_violin(aes(x = source_name, y = mean_meth_percentage, fill = HV), 
+                                  alpha=0.4, trim = TRUE, scale="width")+
+  stat_summary(mapping=aes(x = source_name, y = mean_meth_percentage, fill=HV),
+               fun = median, geom = "point", show.legend = F, shape=21, color='black',
+               position = position_dodge(.175)) +
+  scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_color_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_y_continuous(limits = c(0,100), expand = c(0, 0)) +
+  theme_classic(base_size = 10)+
+  ylab('%CG Methylation')+
+  xlab('') +
+  geom_text(data=annot_df, 
+            mapping=aes(x=x, y=y, label=stars, size=3), 
+            show.legend=FALSE)+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+
+```
+
+```{r, warning=F}
+all <- vegetative_plot / repro_plot / (methylation_plot | guide_area()) + plot_layout(guides='collect')
+all
+ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\multi_tissue.png', all, height=9, width=8.5)
+```
+
+Ok, enrichment time 
+Write a few functions that will do the enrichment calculation across 54 tissues. 
+```{r}
+#step 1: create gene sets 
+geneset_id <- function(dataframe, hv_status){
+  names <- dataframe %>% filter(HV == hv_status) %>% pull('Gene')
+  geneset <- GSEABase::GeneSet(names, geneIdType=SymbolIdentifier())
+  return(geneset)
+}
+
+#step 2: build ranked matrix 
+ranked <- function(dataframe, column_name){
+  filt <- dataframe[,c('Gene', column_name)] 
+  filt <- filt[complete.cases(filt), ]
+  matrix <- filt %>% remove_rownames() %>% column_to_rownames('Gene')
+  ranked <- rankGenes(matrix)
+  return(ranked)
+}
+
+#step 3: calculate p value of set 
+singscore_p <- function(ranked, geneset){
+  sing <- simpleScore(ranked, upSet=geneset)
+  null <- generateNull(rankData=ranked, upSet=geneset)
+  p <- getPvals(null, sing) 
+  return(p)
+}
+
+#step 4: plot 
+singscore_plot <- function(ranked, hv_geneset, nhv_geneset, hv_p, nhv_p, column_name){
+    p <- plotRankDensity(ranked[,column_name,drop=FALSE], upSet=hv_geneset, downSet = nhv_geneset, isInteractive=FALSE)+
+      xlab('')+
+      ylab('')+
+      ggtitle(column_name)+
+      annotate("text", x = 0.75, y = 1.5, label = as.character(hv_p[[1]]), color='darkgreen', size=3)+
+      annotate("text", x = 0.1, y = 1.5, label = as.character(nhv_p[[1]]), color='purple', size=3)+
+      theme(text=element_text(size=5))
+  return(p)
+}
+
+
+#step 5: wrap 
+wrapper <- function(column_name){
+  ranking <- ranked(rel, column_name)
+  hv_p <- singscore_p(ranking, hv_geneset)
+  nhv_p <- singscore_p(ranking, nhv_geneset)
+  print(singscore_plot(ranking, hv_geneset, nhv_geneset, hv_p, nhv_p, column_name))
+  result <- c(column_name, hv_p[[1]], nhv_p[[1]])
+  return(result)
+}
+```
+
+
+```{r}
+#apply functions 
+hv_geneset <- geneset_id(rel, hv_status='hv')
+nhv_geneset <- geneset_id(rel, hv_status='non-hv')
+
+all_p <- lapply(names[45:98], wrapper)
+
+enrich_results <- as.data.frame(do.call(rbind, all_p))
+colnames(enrich_results) <- c('tissue', 'hv_p', 'nhv_p')
+```
+
+```{r}
+enrich_results %>% filter(hv_p < .05)
+```
+
+
+
