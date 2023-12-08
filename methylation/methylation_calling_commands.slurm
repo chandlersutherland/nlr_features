@@ -13,7 +13,7 @@
 cd /global/home/users/chandlersutherland/nlr_features/methylation
 
 #Define the input directory, with fastq files ready for trimming
-trim_input="/global/scratch/users/chandlersutherland/e14/twim_williams/williams_tissues"
+trim_input="/global/scratch/users/chandlersutherland/e14/bs_fastq_files/williams_tissues"
 trim_output="/global/scratch/users/chandlersutherland/e14/trim_williams/williams_tissues"
 
 mkdir -p $trim_output
