@@ -18,7 +18,7 @@ library(ggpubr)
 table <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
 grey <- read.csv("C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E8//Ath_somatic_mutations_gene_level_data.csv")
 merged <- merge(grey, table  %>% subset(select=c('Gene', 'HV')), by.x='gene', by.y='Gene', all=TRUE) %>% 
-  mutate(HV=recode(HV, `0` = "non-hv", `1`="hv")) %>% rename('Gene'='gene')
+  mutate(HV=recode(HV, `0` = "non-hv", `1`="hv")) %>% dplyr::rename('Gene'='gene')
 ```
 
 Write a function that takes in a column name, then outputs a ranked list 
@@ -59,7 +59,7 @@ Methylation enrichment plot:
 ```{r}
 #methylation enrichment plot 
 p1 <- ggplot(meth_rank, aes(x = norm_rank, col = set)) +
-  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.25)
+  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.3)
 
 #Define axes 
 ymap = c(2.6, -0.1)
@@ -70,14 +70,14 @@ meth_enrich_p <- p1 +
       x= norm_rank,
   		y = ymap[1],
   		xend = norm_rank,
-  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.25) +
+  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.3) +
   	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
 geom_segment(data= meth_rank %>% filter(set=='non-hv'), aes(
       x= norm_rank,
   		y = ymap[2],
   		xend = norm_rank,
-  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.25) +
+  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.3) +
   	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
   theme_classic()+
@@ -91,7 +91,7 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 
 ```{r}
 p2 <- ggplot(exp_rank, aes(x = norm_rank, col = set)) +
-  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.25)
+  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.3)
 
 #Define Axes
 ymap = c(2.6, -0.1)
@@ -100,14 +100,14 @@ exp_enrich_p <- p2 + geom_segment(data= exp_rank %>% filter(set=='hv'), aes(
       x= norm_rank,
   		y = ymap[1],
   		xend = norm_rank,
-  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.25) +
+  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.3) +
   	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
 geom_segment(data= exp_rank %>% filter(set=='non-hv'), aes(
       x= norm_rank,
   		y = ymap[2],
   		xend = norm_rank,
-  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.25) +
+  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.3) +
   	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
   theme_classic()+
@@ -119,7 +119,7 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 
 ```{r}
 p3 <- ggplot(te_rank, aes(x = norm_rank, col = set)) +
-  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.25)
+  	stat_density(aes(y = ..density..), geom = 'line', position = 'identity', linewidth=0.3)
 
 ymap = c(2.6, -0.1)
 
@@ -127,14 +127,14 @@ te_enrich_p <- p3 + geom_segment(data= te_rank %>% filter(set=='hv'), aes(
       x= norm_rank,
   		y = ymap[1],
   		xend = norm_rank,
-  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.25) +
+  		yend = ymap[1]+0.3), alpha = 0.75, linewidth=0.3) +
   	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
 geom_segment(data= te_rank %>% filter(set=='non-hv'), aes(
       x= norm_rank,
   		y = ymap[2],
   		xend = norm_rank,
-  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.25) +
+  		yend = ymap[2] -0.3), alpha = 0.75, linewidth=0.3) +
   	scale_colour_manual(values=c('#F8766D', '#00BFC4')) +
   	labs(colour = c('hvNLR', 'nonhvNLR')) +
   theme_classic() +
