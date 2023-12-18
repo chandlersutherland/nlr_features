@@ -54,7 +54,7 @@ NLR_table3$meth_label <- factor(NLR_table3$meth_label, levels=c('non-hv\nn=96', 
 
 p2 <- ggplot(NLR_table3,
        aes(x=meth_label, y=meth_percentage, fill=HV))+
-    geom_violin(lwd=0.25)+
+    geom_violin(lwd=0.3)+
   geom_quasirandom(alpha=0.3, size=0.5)+
   ylim(0,100)+
    geom_signif(comparisons=list(c('non-hv\nn=96', 'hv\nn=31')), 
@@ -71,15 +71,15 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 ```{r}
 #te distance 
 NLR_table3 <- NLR_table %>% filter(!is.na(te_dist)) %>% group_by(HV) %>% mutate(n_te = n()) %>% mutate(te_label = paste0(HV,"\n", "n=",n_te))
-NLR_table3$te_label <- factor(NLR_table3$te_label, levels=c('non-hv\nn=98', 'hv\nn=35'))
+NLR_table3$te_label <- factor(NLR_table3$te_label, levels=c('non-hv\nn=97', 'hv\nn=35'))
 
 p3 <- ggplot(NLR_table3,
        aes(x=te_label, y=te_dist, fill=HV))+
-    geom_violin(lwd=0.25)+
+    geom_violin(lwd=0.3)+
    ylim(0,35)+
   geom_quasirandom(alpha=0.3, size=0.5)+
    # geom_point(position = position_jitterdodge(), alpha=0.3, size=0.5)+
-   geom_signif(comparisons=list(c('non-hv\nn=98', 'hv\nn=35')), 
+   geom_signif(comparisons=list(c('non-hv\nn=97', 'hv\nn=35')), 
                map_signif_level = TRUE, y_position = c(32, 32), test=wilcox.test, textsize=2, size=0.25)+
     scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
   theme_classic()+
