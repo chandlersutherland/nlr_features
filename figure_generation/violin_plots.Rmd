@@ -29,7 +29,7 @@ NLR_table2$exp_label <- factor(NLR_table2$exp_label, levels=c('non-hv\nn=97', 'h
 
 p1 <- ggplot(NLR_table2,
        aes(x=exp_label, y=log2_TPM, fill=HV))+
-    geom_violin(lwd=0.25)+
+    geom_violin(lwd=0.30)+
   geom_quasirandom(alpha=0.3, size=0.5)+
    ylim(0,8.8)+
    geom_signif(comparisons=list(c('non-hv\nn=97', 'hv\nn=31')), 
