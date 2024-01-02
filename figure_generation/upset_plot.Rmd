@@ -10,6 +10,10 @@ library(openxlsx)
 library(ComplexUpset)
 library(ggsignif)
 library(ggpubr)
+library(ggrepel)
+library(rstatix)
+library(psych)
+library(patchwork)
 ```
 ComplexUpset: potentially using to display the data in new and interesting ways 
 ```{r}
@@ -21,6 +25,504 @@ NLR_table <- all_gene_table %>% filter(HV != 'all_genes')
 cluster <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\chae_2020_supplemental.xlsx")
 table <- merge(NLR_table, cluster, by.x='Gene', by.y='gene', all.x=TRUE)
 ```
+
+
+```{r}
+table %>% subset(select=c(Gene, HV, log2_TPM, meth_percentage, te_dist, Pi_by_lseff, D, chrom, start, end, strand))
+
+table %>% filter(whyCluster=='distance')
+```
+
+```{r}
+#table 
+alt <- table %>% mutate(clustered=case_when(cluster!='singleton' ~ 'clustered', 
+                                     cluster=='singleton' ~ 'singleton')) %>%
+  mutate(domain=case_match(Nterm, 'C' ~ 'CNL', 
+                           'T' ~ 'TNL')) 
+
+alt %>% group_by(clustered, HV) %>% summarize(median_TPM=median(log2_TPM, na.rm=T), 
+                                                    median_meth=median(meth_percentage, na.rm=T), 
+                                                    median_te=median(te_dist, na.rm=T))
+
+difference_TPM_clustered <- 4.475567	- 1.973793	
+diff_TPM_singleton <- 4.422107	 - 3.539096	
+
+alt %>% group_by(HV) %>% summarize(median_TPM=median(log2_TPM, na.rm=T))
+diff_all <- 4.475567	 - 2.437992	
+
+diff_all
+diff_TPM_singleton/diff_all
+
+#hv_rel %>% merge(alt, by='Gene') %>% compare_means(log2_TPM~HV.x, ., group.by='clustered', paired=F, method='wilcox.test', p.adjust.method = 'BH')
+
+compare_means(log2_TPM~clustered, alt, method='wilcox')
+compare_means(log2_TPM~domain, alt, method='wilcox')
+
+alt <- alt %>% 
+  pivot_longer(cols=c('clustered', 'domain'), values_to='subgroup') %>% 
+  filter(!is.na(subgroup))
+alt$subgroup %>% unique()
+
+```
+
+
+```{r}
+alt$HV <- factor(alt$HV, levels=c('non-hv', 'hv'))
+
+
+alt %>% arrange(subgroup, HV)
+
+y_label <- expression('log'[2]*'(TPM)')
+
+
+#build annotation df 
+group_n <- alt %>% pull(subgroup) %>% unique() %>% length()
+alt$subgroup <- factor(alt$subgroup, levels=c('singleton', 'clustered', 'CNL', 'TNL'))
+p_val <- alt %>% compare_means(log2_TPM~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
+  arrange(subgroup, p.adj) %>% 
+  unique() %>%
+  mutate(x=seq(from=1, to=group_n)) %>% 
+  mutate(y=9.5) %>% 
+  mutate(stars=case_when(p.adj < .001 ~'***', 
+                         p.adj >= .001 & p.adj < .01 ~ '**', 
+                         p.adj >= .01 & p.adj < .05 ~ '*', 
+                         p.adj > .05 ~ 'ns'
+                         ))
+
+alt %>% filter(!is.na(log2_TPM)) %>% group_by(HV, subgroup) %>% summarize(n=n())
+
+expr_p <- alt %>% arrange(subgroup, HV) %>%
+  ggplot()+
+  introdataviz::geom_split_violin(aes(x=subgroup, y=log2_TPM, fill=HV), alpha=0.4, trim = T, scale="width", 
+                                  lwd=0.30)+
+  stat_summary(mapping=aes(x=subgroup, y=log2_TPM, fill=HV), fun = median, geom = "point", show.legend = F, shape=21, color='black',
+               position = position_dodge(.225), size=1) +
+  scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_color_manual(values=c('#00BFC4',  '#F8766D'))+
+  theme_classic(base_size = 10)+
+  ylab(y_label)+
+  xlab('')+
+  scale_x_discrete(breaks=c("singleton","clustered", "CNL", "TNL"),
+        labels=c("singletons\nn=28,6", "clustered\nn=68,25", "CNLs\nn=30,12", "TNLs\nn=61,19"))+
+  theme(legend.position='none', 
+        text = element_text(size=10, family='sans'), 
+        axis.text.y=element_text(size=10))+
+  geom_text(data=p_val, 
+            mapping=aes(x=x, y=y, label=stars),
+            size = 10/.pt,
+            show.legend=FALSE)
+
+```
+
+```{r}
+p_val <- alt %>% compare_means(meth_percentage~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
+  arrange(subgroup, p.adj) %>% 
+  unique() %>%
+  mutate(x=seq(from=1, to=group_n)) %>% 
+  mutate(y=90) %>% 
+  mutate(stars=case_when(p.adj < .001 ~'***', 
+                         p.adj >= .001 & p.adj < .01 ~ '**', 
+                         p.adj >= .01 & p.adj < .05 ~ '*', 
+                         p.adj > .05 ~ 'ns'
+                         ))
+
+meth_p <- alt %>% arrange(subgroup, HV) %>%
+  ggplot()+
+  introdataviz::geom_split_violin(aes(x=subgroup, y=meth_percentage, fill=HV), alpha=0.4, trim = TRUE, scale="width", 
+                                  lwd=0.30)+
+  stat_summary(mapping=aes(x=subgroup, y=meth_percentage, fill=HV), fun = median, geom = "point", show.legend = F, shape=21, color='black',
+               position = position_dodge(.225), size=1) +
+  scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_color_manual(values=c('#00BFC4',  '#F8766D'))+
+  theme_classic(base_size = 10)+
+  ylab('%CG Methylation')+
+  xlab('')+
+  scale_x_discrete(breaks=c("singleton","clustered", "CNL", "TNL"),
+        labels=c("singletons\nn=27,6", "clustered\nn=68,25", "CNLs\nn=29,12", "TNLs\nn=61,19"))+
+  theme(legend.position='none', 
+        text = element_text(size=10, family='sans'), 
+        axis.text.y=element_text(size=10))+
+  geom_text(data=p_val, 
+            mapping=aes(x=x, y=y, label=stars),
+            size = 10/.pt,
+            show.legend=FALSE)
+
+
+alt %>% filter(!is.na(meth_percentage)) %>% group_by(HV, subgroup) %>% summarize(n=n())
+alt %>% filter(!is.na(log2_TPM)) %>% subset(select=-c(subgroup)) %>% unique() %>% group_by(HV) %>% summarize(n=n())
+```
+```{r}
+p_val <- alt %>% compare_means(te_dist~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
+  arrange(subgroup, p.adj) %>% 
+  unique() %>%
+  mutate(x=seq(from=1, to=group_n)) %>% 
+  mutate(y=34) %>% 
+  mutate(stars=case_when(p.adj < .001 ~'***', 
+                         p.adj >= .001 & p.adj < .01 ~ '**', 
+                         p.adj >= .01 & p.adj < .05 ~ '*', 
+                         p.adj > .05 ~ 'ns'
+                         ))
+
+te_p <- alt %>% arrange(subgroup, HV) %>%
+  ggplot()+
+  introdataviz::geom_split_violin(aes(x=subgroup, y=te_dist, fill=HV), alpha=0.4, trim = TRUE, scale="width", 
+                                  lwd=0.30)+
+  stat_summary(mapping=aes(x=subgroup, y=te_dist, fill=HV), fun = median, geom = "point", show.legend = F, shape=21, color='black',
+               position = position_dodge(.225), size=1) +
+  scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
+  scale_color_manual(values=c('#00BFC4',  '#F8766D'))+
+  theme_classic(base_size = 10)+
+  ylab('TE Distance')+
+  xlab('')+
+  #ggtitle('Vegetative Tissue') +
+  theme(legend.position='none', 
+        text = element_text(size=10, family='sans'), 
+        axis.text.y=element_text(size=10))+
+  geom_text(data=p_val, 
+            mapping=aes(x=x, y=y, label=stars),
+            size = 10/.pt,
+            show.legend=FALSE)+
+  scale_x_discrete(breaks=c("all","singleton","clustered", "CNL", "TNL"),
+        labels=c("all NLRs\nn=97,35", "singletons\nn=28,6", "clustered\nn=68,29", "CNLs\nn=30,16", "TNLs\nn=61,19"))
+
+
+alt %>% group_by(HV, subgroup) %>% summarize(n=n())
+split_upset <- expr_p+meth_p+te_p + plot_layout(guides='collect', ncol=1)
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\upset_2.png', plot=split_upset, dpi='retina', width=90, height=120, units = 'mm')
+```
+
+```{r}
+alt %>% mutate()
+aov(log2_TPM ~ HV * clustered * Nterm, data=alt)
+```
+
+```{r}
+model1 <- lm(log2_TPM~HV, data=alt)
+model2 <- lm(log2_TPM~HV+domain+clustered, data=alt)
+summary(model1)$coeff
+summary(model2)$coeff
+Anova(model2)
+contrasts(alt$HV)
+
+hist(model2$residuals)
+```
+
+
+Show this with a plot 
+```{r}
+#hv /non-hvNLR mixed clusters:
+hv_prop_df <- table %>% 
+  filter(cluster_type != 'singleton') %>% 
+  filter(whyCluster=='distance') %>%
+  group_by(cluster) %>% 
+  mutate(HV=case_match(HV, 
+                       'hv' ~ 1, 
+                       'non-hv' ~ 0))%>%
+  summarize(hv_prop = sum(HV)/n()) %>%
+  mutate(clean_cluster=case_match(cluster, 
+                                'B3' ~ "B3/UNI",
+                                'cAT1G63350' ~ 'cAT1G63350',
+                                'cAT5G38340' ~ 'cAT5G38340',
+                                  "DM1_SSI4" ~ 'SSI4', 
+                                  "DM2_RPP1"  ~ 'RPP1', 
+                                  "DM4_RPP8" ~ 'RPP8', 
+                                  "DM6_RPP7"  ~ 'RPP7', 
+                                  "DM8_RPP4-5" ~ 'RPP4/5',
+                                  "RPP13" ~ 'RPP13',
+                                  "RPS6" ~ 'RPS6',
+                                  "RSG2" ~ 'RSG2',
+                                ))
+
+hist <- ggplot() + 
+  geom_histogram(hv_prop_df, mapping=aes(x=hv_prop), bins=30)
+
+layer_data(hist)
+real_bin <- ggplot_build(hist)$data[[1]] %>% subset(select=c(y, xmin, xmax))
+breaks <- real_bin$xmin %>% unique()
+plot_df <- hv_prop_df %>% mutate(bins2=as.factor(as.numeric(cut(hv_prop, breaks=breaks))))%>% arrange(hv_prop)
+counts <- plot_df %>% group_by(bins2) %>% count
+label_df <- plot_df %>% left_join(counts, by='bins2')
+label_df$bins2 <- factor(label_df$bins2, levels = levels(addNA(label_df$bins2)), labels = c(levels(label_df$bins2), 30), exclude = NULL)
+
+#levels(facna) <- c(levels(fac), 88)
+
+
+bins <- 30
+cols <- c('#00BFC4',  '#F8766D')
+colGradient <- colorRampPalette(cols)
+cut.cols <- colGradient(30)
+
+cluster_prop <- ggplot(label_df, aes(x=hv_prop)) + 
+  geom_histogram(aes(fill=bins2), bins=30, col=I('darkgrey'))+
+#  geom_text_repel(label_df, 
+ #                  mapping=aes(label=clean_cluster, x=hv_prop, y=n, segment.color='grey', color='grey'), size=3,  nudge_y=1, min.segment.length = 0.1)+
+  xlab("Proportion hvNLRs")+
+  ylab("Number of Clusters")+
+  scale_fill_manual(values=c('1'='#00BFC4', 
+                             '2'='#08BCC1', 
+                             '3'='#11B9BE', 
+                             '4'='#19B7BB', 
+                             '5'='#22B4B8', 
+                             '6'='#2AB2B5',
+                             '7'='#33AFB2', 
+                             '8'='#3BADAF', 
+                             '9'='#44AAAC',
+                             '10'='#4CA8A9', 
+                             '11'='#55A5A6',
+                             '12'='#5EA3A3', 
+                             '13'='#66A0A0', 
+                             '14'='#6F9E9D', 
+                             '15'='#779B9A',
+                             '16'='#809997',
+                             '17'='#889694',
+                             '18'='#919491',
+                             '19'='#99918E',
+                             '20'='#A28F8B', 
+                             '21'='#AB8C88',
+                             '22'='#B38A85',
+                             '23'='#BC8782',
+                             '24'='#C4857F',
+                             '25'='#CD827C', 
+                             '26'='#D58079',
+                             '27'='#DE7D75', 
+                             '28'='#E67B73', 
+                             '29'='#EF7870', 
+                             '30'='#F8766D'))+
+  theme_classic()+
+  theme(legend.position='none', 
+        text=element_text(size=10))
+
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\hist_cluster.png', plot=cluster_prop, dpi='retina', width=100, height=55, units = 'mm')
+```
+
+```{r}
+mixed_clust <- hv_prop_df %>% filter(hv_prop > 0 & hv_prop < 1) %>% pull(cluster)
+popgen <- read_csv("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\popgen_NLR.csv") %>% subset(select=c(PiN, PiS, gene, Mutation.Probability.Score)) %>%
+  rename('gene'='Gene')
+mixed_df <- table %>% filter(cluster %in% mixed_clust) %>% merge(popgen, by='Gene')
+mixed_df$HV <- factor(mixed_df$HV, levels=c('non-hv', 'hv'))
+```
+```{r}
+hv_cl <- hv_prop_df %>% filter(hv_prop > 0) %>% pull(cluster)
+table %>% filter(cluster %in% hv_cl) %>% filter(HV=='hv') %>% nrow()
+table %>% filter(cluster %in% mixed_clust) %>% filter(HV=='hv') %>% nrow()
+
+```
+
+
+```{r}
+expr <- mixed_df %>% 
+  ggplot(aes(x=HV, y=log2_TPM)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+  theme_classic()+
+ # geom_signif(comparisons=list(c('non-hv', 'hv')), 
+#               map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(7))+
+  labs(x = '', y='log2TPM')
+
+meth_percentage <- mixed_df %>% 
+  ggplot(aes(x=HV, y=meth_percentage)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+ # geom_signif(comparisons=list(c('non-hv', 'hv')), 
+#               map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(70))+
+  theme_classic()+
+  labs(x = '', y='% CG methylation')
+
+d <- mixed_df %>% 
+  ggplot(aes(x=HV, y=D)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+ # geom_signif(comparisons=list(c('non-hv', 'hv')), 
+  #             map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(1.5))+
+  theme_classic()+
+  labs(x = '', y='D')
+
+pi <- mixed_df %>% 
+  ggplot(aes(x=HV, y=Pi_by_lseff)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+  #geom_signif(comparisons=list(c('non-hv', 'hv')), 
+  #             map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(0.125))+
+  theme_classic()+
+  labs(x = '', y='Pi')
+
+te_dist <- mixed_df %>% 
+  ggplot(aes(x=HV, y=te_dist)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+  #geom_signif(comparisons=list(c('non-hv', 'hv')), 
+  #             map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(15))+
+  theme_classic()+
+  labs(x = '', y='TE Distance')
+
+PiN <- mixed_df %>% 
+  ggplot(aes(x=HV, y=PiN)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+  #geom_signif(comparisons=list(c('non-hv', 'hv')), 
+  #             map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(0.035))+
+  theme_classic()+
+  labs(x = '', y='PiN')
+
+PiS <- mixed_df %>% 
+  ggplot(aes(x=HV, y=PiS)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+  #geom_signif(comparisons=list(c('non-hv', 'hv')), 
+  #             map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(0.08))+
+  theme_classic()+
+  labs(x = '', y='PiS')
+
+PiNPiS <- mixed_df %>% 
+  ggplot(aes(x=HV, y=PiN/PiS)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+  #geom_signif(comparisons=list(c('non-hv', 'hv')), 
+  #             map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(1.5))+
+  theme_classic()+
+  labs(x = '', y='PiNPiS')
+
+mut_prob <- mixed_df %>% 
+  ggplot(aes(x=HV, y=Mutation.Probability.Score)) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+  #geom_signif(comparisons=list(c('non-hv', 'hv')), 
+  #             map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(0.00013))+
+  theme_classic()+
+  labs(x = '', y='Mutation Probability Score')
+
+p <- expr+meth_percentage+te_dist+d+pi+mut_prob+PiS+PiN+PiNPiS+plot_layout(guides='collect', nrow=3)
+
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\p_cluster.png', plot=p, dpi='retina', width=180, height=150, units = 'mm')
+```
+
+
+
+```{r}
+#find closest hv and non-hv neighbor within each cluster, percent difference between them....
+mixed_df %>% filter(cluster=='cAT5G38340') %>% subset(select=c(Gene, HV, start, end, strand, distance_front, distance_back))
+#RPP7 the pair is 'AT1G58410' and 'AT1G58602', 42098bp apart 
+#AT1G63350 is a perfect neighbor pair 1883 bp apart, 'AT1G63350', 'AT1G63360'
+#RPP13 is a ways apart in Col-0, but 'AT3G46530' and 'AT3G46710' are 73,150bp apart 
+#RPP4/5 is fun. 'AT4G16890' hv is 6403bp away from AT4G16900 non-hv which is 2631 bp away from AT4G16920
+#RPP8: AT5G35450 non-hv is 3796264bp away! clustered by similarity, ignore for this...
+#cAT5G38340 is a perfect neighbor pair 1670 bp apart 
+#DM1_SSI4 has AT5G41550 and AT5G41740 67840bp apart 
+#we know we love RSG2 AT5G43730 AT5G43740
+#RPS6 AT5G46450 and 	AT5G46510 are 20kb apart 
+
+neighbor_only <- c(
+  #'AT1G58410', 'AT1G58602', #RPP7
+  'AT1G63350', 'AT1G63360', #cAT1G63350
+  #'AT3G46530', 'AT3G46710',  #RPP13
+  #'AT4G16900', 'AT4G16920', #RPP4/5
+  'AT5G38340', 'AT5G38350', #cAT5G38340
+  #'AT5G41550', 'AT5G41740', #DMI SSI4
+  'AT5G43730', 'AT5G43740', 
+  'AT5G46450', 'AT5G46510')
+
+mixed_df %>% filter(Gene %in% neighbor_only)
+
+mixed_df %>% filter(Gene %in% neighbor_only) %>%
+  ggplot(aes(x=HV, y=D) +
+  geom_point(aes(color=cluster), size=0.5)+
+  geom_line(aes(group=cluster, color=cluster), linewidth=0.3)+
+  theme_classic()
+```
+
+```{r}
+#average within cluster % difference 
+percent <- mixed_df %>% group_by(HV, cluster) %>% summarize(log2_TPM=mean(log2_TPM, na.rm=T), 
+                                                 meth_percentage=mean(meth_percentage, na.rm=T), 
+                                                 te_dist=mean(te_dist), 
+                                                 d=mean(D, na.rm=T), 
+                                                 Pi=mean(Pi_by_lseff, na.rm=T), 
+                                                 PiN=mean(PiN, na.rm=T),
+                                                PiS=mean(PiS, na.rm=T),
+                                                PiNPiS=mean(PiN/PiS, na.rm=T), 
+                                                Mutation.Probability.Score=mean(Mutation.Probability.Score))
+
+percent %>% arrange(cluster, HV) %>%
+  mutate(pct_change = (log2_TPM - lag(log2_TPM))/lag(log2_TPM) * 100)
+
+pre_change <- percent %>% ungroup() %>% arrange(cluster, HV) %>% group_by(cluster) %>% summarize(log2_TPM=100*(log2_TPM[2]-log2_TPM[1])/((log2_TPM[1]+log2_TPM[2])/2),
+                                                                                                 meth_percentage=100*(meth_percentage[2]-meth_percentage[1])/((meth_percentage[1]+meth_percentage[2])/2),
+                                                                                                 te_dist=100*(te_dist[2]-te_dist[1])/((te_dist[1]+te_dist[2])/2), 
+                                                                                                 d=100*(d[2]-d[1])/((d[1]+d[2])/2),
+                                                                                                 Pi=100*(Pi[2]-Pi[1])/((Pi[1]+Pi[2])/2),
+                                                                                                 PiN=100*(PiN[2]-PiN[1])/((PiN[1]+PiN[2])/2),
+                                                                                                 PiS=100*(PiS[2]-PiS[1])/((PiS[1]+PiS[2])/2),
+                                                                                                 PiNPiS=100*(PiNPiS[2]-PiNPiS[1])/((PiNPiS[1]+PiNPiS[2])/2),                                                                             Mutation.Probability.Score=100*(Mutation.Probability.Score[2]-Mutation.Probability.Score[1])/((Mutation.Probability.Score[1]+Mutation.Probability.Score[2])/2)) %>%
+                                                                                                   pivot_longer(cols=c(log2_TPM, meth_percentage, te_dist, d, Pi, PiN, PiS, PiNPiS, Mutation.Probability.Score)) 
+
+to_plot <- pre_change %>% group_by(name) %>% summarize(mean=mean(value), median=median(value)) %>% 
+  mutate(subgroup=case_match(name, 
+                             'te_dist' ~ 'feature', 
+                             'Pi' ~ 'Population Genetics Statistic', 
+                             'meth_percentage' ~ 'feature',
+                             'log2_TPM' ~ 'feature',
+                             'd' ~ 'Population Genetics Statistic', 
+                             'PiN' ~ 'Population Genetics Statistic', 
+                             'PiS' ~ 'Population Genetics Statistic', 
+                             'PiNPiS' ~ 'Population Genetics Statistic')) %>%
+  arrange(mean) %>%    # First sort by val. This sort the dataframe but NOT the factor levels
+  mutate(name=factor(name, levels=name))
+  #filter(name %in% c('te_dist', 'Pi', 'meth_percentage', 'log2_TPM', 'd'))
+
+
+percent_diff <- to_plot %>% ggplot(aes(x=mean, y=name))+
+  geom_col(aes(color=name), fill='lightgrey')+
+    geom_vline(xintercept=0)+
+ # coord_flip()+
+  theme_classic()+
+  ylab('')+
+  xlab('Within cluster hv vs non-hv % diff.')+
+  scale_y_discrete(labels=c("d" = "Tajima's D", 
+                            "te_dist" = "TE Distance",
+                            'meth_percentage'='%CG Methylation',
+                            'log2_TPM'=expression('log'[2]*'(TPM)'),
+                            'Pi'=expression(pi), 
+                            'PiS'=expression(pi[S]), 
+                            'PiN'=expression(pi[N]), 
+                            'PiNPiS'=expression(paste(pi[N],'/',pi[S])), 
+                            'Mutation.Probability.Score'='Mutation Prob. Score'))+
+  scale_color_manual(values=c( '#00BFC4', '#00BFC4', '#00BFC4', '#F8766D', '#F8766D', '#F8766D', '#F8766D', '#F8766D', '#F8766D'))+
+  theme(legend.position = 'none', 
+        text = element_text(size=10))#+
+  #facet_wrap(~subgroup, scales='free', ncol=1)
+
+
+#ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\percent_diff.png', plot=percent_diff, dpi='retina', width=80, height=55, units = 'mm')
+```
+```{r}
+levels <- pre_change %>% group_by(name) %>% summarize(mean=mean(value)) %>% arrange(mean) %>% pull(name)
+pre_change$name <- factor(pre_change$name, levels=levels)
+pre_change %>% filter(cluster != 'DM8_RPP4-5' & cluster != 'DM6_RPP7') %>% ggplot(aes(x=value, y=name, label=cluster))+
+  geom_point(aes(color=name), postion=position_dodge())+
+  geom_vline(xintercept=0)+
+  geom_signif(test='t.test')+
+  #geom_text()+
+ # coord_flip()+
+  theme_classic()+
+  ylab('')+
+  xlab('Within cluster hv vs non-hv % diff.')+
+  scale_y_discrete(labels=c("d" = "Tajima's D", 
+                            "te_dist" = "TE Distance",
+                            'meth_percentage'='%CG Methylation',
+                            'log2_TPM'=expression('log'[2]*'(TPM)'),
+                            'Pi'=expression(pi), 
+                            'PiS'=expression(pi[S]), 
+                            'PiN'=expression(pi[N]), 
+                            'PiNPiS'=expression(paste(pi[N],'/',pi[S])), 
+                            'Mutation.Probability.Score'='Mutation Prob. Score'))+
+  #scale_color_manual(values=c( '#00BFC4', '#00BFC4', '#00BFC4', '#F8766D', '#F8766D', '#F8766D', '#F8766D', '#F8766D', '#F8766D'))+
+  theme(legend.position = 'none', 
+        text = element_text(size=10))
+
+t.test(pre_change %>% filter(name=='te_dist') %>% pull(value))
+```
+
 
 First, prepare the dataset. UpSet expects a boolean vectors under an indicator column header 
 
@@ -36,13 +538,17 @@ table$singleton <- table$cluster_type == 'singleton'
 sets = c('HV', 'non-HV', 'clustered', 'CNL', 'TNL')
 rev(sets)
 ```
+
 ```{r}
+
 table %>% group_by(HV, clustered) %>% summarize(n())
 
 cont_table <- data.frame(clustered=c(29,68),singleton=c(6,29), row.names=c("hv","non-hv"))
 chisq.test(cont_table, correct=FALSE)
 fisher.test(cont_table)
+
 ```
+
 
 Calculate the cluster membership 
 ```{r}
@@ -82,10 +588,10 @@ d <- compare_means(te_dist~HV, table %>% filter(Nterm == 'T'), method='wilcox.te
 te_dist_pval <- p.adjust(c(a, b, c, d ), method='BH', 4)
 
 #methylation
-g <- compare_means(meth_percentage~HV, table, method='wilcox.test', paired=FALSE)
-h <- compare_means(meth_percentage~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)
-i <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)
-j <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)
+g <- compare_means(meth_percentage~HV, table, method='wilcox.test', paired=FALSE)$p
+h <- compare_means(meth_percentage~HV, table %>% filter(clustered == TRUE), method='wilcox.test', paired=FALSE)$p
+i <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'C'), method='wilcox.test', paired=FALSE)$p
+j <- compare_means(meth_percentage~HV, table %>% filter(Nterm == 'T'), method='wilcox.test', paired=FALSE)$p
 
 
 meth_pval <- p.adjust(c(g, h, i, j ), method='BH', 4)
@@ -191,4 +697,10 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 ```{r}
 table %>% group_by(HV, TNL) %>% summarize(n=n())
 ```
+
+```{r}
+#alternate 
+table
+```
+
 
