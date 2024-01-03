@@ -45,28 +45,39 @@ alt <- table %>%
 index <- which(alt$gene == 'AT4G19050')
 alt[index, 2] = 'Chr4'
 alt[index, 20] = 'singleton'
-alt[index, 21] = 'CNL' 
+alt[index, 21] = 'CNL'
+```
 
-alt <- alt %>% 
+
+Fisher test of independence between HV status and cluster status 
+```{r}
+cont_table <- alt %>% 
+  group_by(HV, clustered) %>% 
+  summarize(n=n()) %>% 
+  pivot_wider(names_from = c('clustered'), values_from='n') %>% 
+  column_to_rownames('HV') %>% 
+  as.matrix()
+fisher.test(cont_table)
+```
+HV status and cluster status are independent 
+
+```{r}
+pivot_alt <- alt %>% 
   pivot_longer(cols=c('clustered', 'domain'), values_to='subgroup') 
-
-
 ```
 
 
 ```{r}
-alt$HV <- factor(alt$HV, levels=c('non-hv', 'hv'))
+pivot_alt$HV <- factor(pivot_alt$HV, levels=c('non-hv', 'hv'))
 
-
-alt %>% arrange(subgroup, HV)
 
 y_label <- expression('log'[2]*'(TPM)')
 
 
 #build annotation df 
-group_n <- alt %>% pull(subgroup) %>% unique() %>% length()
-alt$subgroup <- factor(alt$subgroup, levels=c('singleton', 'clustered', 'CNL', 'TNL'))
-p_val <- alt %>% compare_means(log2_TPM~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
+group_n <- pivot_alt %>% pull(subgroup) %>% unique() %>% length()
+pivot_alt$subgroup <- factor(pivot_alt$subgroup, levels=c('singleton', 'clustered', 'CNL', 'TNL'))
+p_val <- pivot_alt %>% compare_means(log2_TPM~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
   arrange(subgroup, p.adj) %>% 
   unique() %>%
   mutate(x=seq(from=1, to=group_n)) %>% 
@@ -77,9 +88,9 @@ p_val <- alt %>% compare_means(log2_TPM~HV, ., group.by='subgroup', paired=F, me
                          p.adj > .05 ~ 'ns'
                          ))
 
-alt %>% filter(!is.na(log2_TPM)) %>% group_by(HV, subgroup) %>% summarize(n=n())
+pivot_alt %>% filter(!is.na(log2_TPM)) %>% group_by(HV, subgroup) %>% summarize(n=n())
 
-expr_p <- alt %>% arrange(subgroup, HV) %>%
+expr_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   ggplot()+
   introdataviz::geom_split_violin(aes(x=subgroup, y=log2_TPM, fill=HV), alpha=0.4, trim = T, scale="width", 
                                   lwd=0.30)+
@@ -104,7 +115,7 @@ expr_p <- alt %>% arrange(subgroup, HV) %>%
 ```
 
 ```{r}
-p_val <- alt %>% compare_means(meth_percentage~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
+p_val <- pivot_alt %>% compare_means(meth_percentage~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
   arrange(subgroup, p.adj) %>% 
   unique() %>%
   mutate(x=seq(from=1, to=group_n)) %>% 
@@ -116,9 +127,9 @@ p_val <- alt %>% compare_means(meth_percentage~HV, ., group.by='subgroup', paire
                          ))
 
 #print sample sizes
-alt %>% filter(!is.na(meth_percentage)) %>% group_by(HV, subgroup) %>% summarize(n=n())
+pivot_alt %>% filter(!is.na(meth_percentage)) %>% group_by(HV, subgroup) %>% summarize(n=n())
 
-meth_p <- alt %>% arrange(subgroup, HV) %>%
+meth_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   ggplot()+
   introdataviz::geom_split_violin(aes(x=subgroup, y=meth_percentage, fill=HV), alpha=0.4, trim = TRUE, scale="width", 
                                   lwd=0.30)+
@@ -141,7 +152,7 @@ meth_p <- alt %>% arrange(subgroup, HV) %>%
             show.legend=FALSE)
 ```
 ```{r}
-p_val <- alt %>% compare_means(te_dist~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
+p_val <- pivot_alt %>% compare_means(te_dist~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
   arrange(subgroup, p.adj) %>% 
   unique() %>%
   mutate(x=seq(from=1, to=group_n)) %>% 
@@ -152,7 +163,7 @@ p_val <- alt %>% compare_means(te_dist~HV, ., group.by='subgroup', paired=F, met
                          p.adj > .05 ~ 'ns'
                          ))
 
-te_p <- alt %>% arrange(subgroup, HV) %>%
+te_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   ggplot()+
   introdataviz::geom_split_violin(aes(x=subgroup, y=te_dist, fill=HV), alpha=0.4, trim = TRUE, scale="width", 
                                   lwd=0.30)+
@@ -176,9 +187,13 @@ te_p <- alt %>% arrange(subgroup, HV) %>%
         labels=c("all NLRs\nn=97,35", "singletons\nn=28,7", "clustered\nn=63,28", "CNLs\nn=30,16", "TNLs\nn=61,19"))
 
 
-alt %>% group_by(HV, subgroup) %>% summarize(n=n())
+pivot_alt %>% group_by(HV, subgroup) %>% summarize(n=n())
 split_upset <- expr_p+meth_p+te_p + plot_layout(guides='collect', ncol=1)
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\upset_2.png', plot=split_upset, dpi='retina', width=90, height=110, units = 'mm')
+```
+
+```{r}
+alt
 ```
 
 
