@@ -21,6 +21,7 @@ library(ggpubr)
 library(ggbeeswarm)
 require(tidyverse)
 library(openxlsx)
+library(patchwork)
 ```
 
 Gather and clean the necessary datasets 
@@ -61,11 +62,10 @@ to_plot$label <- factor(to_plot$label, levels=c(labels[1], labels[2]))
 
 ```{r}
 #read in sliding window analysis 
-x <- to_plot %>% subset(select=c('Gene', 'dna_aln')) %>% rename('gene_length'='dna_aln')
-vig_slider <- read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//egglib_vignette_window_stats.csv") %>% 
+x <- to_plot %>% subset(select=c('Gene', 'dna_aln')) %>% dplyr::rename('gene_length'='dna_aln')
+vig_slider <- read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//egglib_window_stats.csv") %>% 
   mutate(Pi_site=Pi_raw/lseff) %>% 
-  mutate(nuc_midpoint = (start*3+dna_aln/2)) %>% 
-  filter(Gene %in% c('AT5G43730','AT5G43740'))
+  mutate(nuc_midpoint = (start*3+dna_aln/2)) 
 
 col_slider <- merge(x, vig_slider, by='Gene', all.x=FALSE) %>% mutate(normal=nuc_midpoint/gene_length) 
 
@@ -77,19 +77,25 @@ merged <- merge(grey, table  %>% subset(select=c('Gene', 'HV')), by.x='gene', by
 
 merged$HV[is.na(merged$HV)]<-'all_genes'
 merged$HV <- factor(merged$HV , levels=c("all_genes", "non-hv", "hv"))
+NLR_only <- merged %>% filter(HV != 'all_genes')
+
+NLR_only %>% subset(select=c('gene', 'Mutation.Probability.Score')) %>% merge(to_plot, by.x='gene', by.y='Gene') %>% 
+  write.csv("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\popgen_NLR.csv")
 
 #read in all gene data 
 all_gene <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
+
+
 ```
 
 
 ```{r}
 #read in hyphy positive selection results 
 fel_results<-read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//fel_results.csv")%>%
-  rename('Clade'='clade')
+  dplyr::rename('Clade'='clade')
 
 meme_results<-read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//meme_results.csv")%>%
-  rename('Clade'='clade')
+  dplyr::rename('Clade'='clade')
 
 clades <- read.table(file='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Atha_NLRome_GeneTable.txt', header=1) %>% 
   filter(Ecotype=='ATHALIANA') %>% 
@@ -276,7 +282,7 @@ p13 <- pi_long %>%
 
 p13
 
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\pisandpin.png', plot=p13, dpi='retina', width=2.5, height=2)
+#ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\pisandpin.png', plot=p13, dpi='retina', width=2.5, height=2)
 ```
 
 Supplemental figure 4: PiNPiS/domain
@@ -337,7 +343,7 @@ pis_piN <- to_plot %>%
 
 pis_piN 
 
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\pis_pin.png', plot=pis_piN, dpi='retina', width=3.5, height=2.36)
+#ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\pis_pin.png', plot=pis_piN, dpi='retina', width=3.5, height=2.36)
 
 #statistics and linear regression
 to_plot %>% group_by(HV) %>% summarize(mean=mean(PiNPiS, na.rm=TRUE), median=median(PiNPiS, na.rm=TRUE))
@@ -370,7 +376,7 @@ mut_prob_plot <- NLR_only %>%
 
 mut_prob_plot 
 
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\mutprob.png', plot=mut_prob_plot, dpi='retina', width=3, height=2.5)
+#ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\mutprob.png', plot=mut_prob_plot, dpi='retina', width=3, height=2.5)
 ```
 
 
@@ -405,184 +411,149 @@ p_episodic <- compare_means(value~HV, sites_internal_long %>% filter(model=='Epi
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\sites_internal.png', plot=facet_sites_internal, dpi='retina', width=3.5, height=2.5)
 ```
 
+```{r}
+fig6 <- p13+pis_piN+mut_prob_plot+facet_sites_internal
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\fig6.png', plot=fig6, dpi='retina', width=180, height=120, unit='mm')
+```
+
+
 # Figure 5: 
 ```{r}
-to_plot %>% filter(Gene %in% c('AT5G43730','AT5G43740'))
-```
 
-AT5G43730
-Chr5:17560178..17564434 forward
-CDS only: 88-2635  
+col_popgen %>% filter(Gene=='AT5G43730')
 
-cc: 82-186 on CDS
-nbarc: 472-1311
-LRR: 1534-2472
-```{r}
-#make annotation table 
-gene <- c('AT5G43730', 'AT5G43730', 'AT5G43730')
-domain <- c('CC', 'NBARC', 'LRR')
-start <- c(82, 472, 1534)
-stop <- c(186, 1311, 2472)
-coords <-data.frame(gene, domain, start, stop)
+#step 1: get AA coordinates of each domain from col_popgen, convert to nucleotide coordinates of coding sequence (multiply by 3)
+annotation_creator <- function(gene_name){
+  coords <- col_popgen %>% 
+    filter(Gene==gene_name) %>% 
+    filter(domain != 'CDS') %>%
+    subset(select=c('Gene', 'domain', 'start', 'stop')) %>% 
+    mutate(start=start*3)%>%
+    mutate(stop=stop*3)
+  
+  return(coords)
+}
 
-coords$domain <- factor(coords$domain, levels=c('CC', "NBARC", 'LRR'))
-plotter <- grey_variants %>% 
-  filter(Chrom == 5 & position >= 17560178+88 & position <=17564434-1621) %>%
-  mutate_at('position', as.numeric) %>% 
-  mutate(rel_pos=position-(17560178+88))
+gene_length_finder <- function(gene_name){
+  gene_length <- col_popgen %>% 
+    filter(Gene==gene_name) %>% 
+    filter(domain == 'CDS') %>%
+    pull(stop)
+  
+  return(gene_length*3)
+}
 
-mutation <- ggplot(plotter)+
-  ylim(0, 3)+
+coords <- annotation_creator('AT5G43730')
+gene_length <- gene_length_finder('AT5G43730')
+
+#step 2: plot
+tripartite_plot <- function(gene_name){
+  coords <- annotation_creator(gene_name)
+  gene_length <- gene_length_finder(gene_name)
+  
+  #plot domains as rectangles
+  domains <- ggplot()+
   theme_classic()+
-  xlab('Nucleotide Position')+
   geom_rect(data=coords, aes(xmin=start, xmax=stop,
-                             ymin=0, ymax=0, color=domain),size=5)+
-   scale_color_manual(values=c('#00997F', '#00BADE', '#9661FF'))+
-  geom_point(aes(x=rel_pos, y=0.2, fill=type), shape=25, size=2)+
-  scale_fill_manual(values=c('black', 'white'))+
-  labs(fill='Mutation Type', color='Domain')+
-  xlim(0, 2547)+
-  theme(axis.title.y=element_blank(),
+                             ymin=0, ymax=.2,  fill=domain),size=5)+
+  scale_fill_manual(values=c('CC'='#00997F', 
+                               'TIR'='orange',
+                               'NBARC'='#00BADE', 
+                               'LRR'='#9661FF'))+
+  xlim(0, gene_length)+
+  ylim(0,1)+
+  theme(legend.position='right',
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.line.x=element_blank(), 
+        axis.line.y=element_blank(), 
         axis.text.y=element_blank(),
-        axis.ticks.y=element_blank(), 
-        axis.line.y=element_blank())
-
-mutation 
-
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\mut_case.png', plot=mutation, dpi='retina', width=5, height=3)
-```
-
-AT5G43740
-Chr5:17564696..17569148 forward
-CDS start 1313 after 
-CDS end 550 bp before 
-
-#cc: 78-162 on CDS
-#nbarc: 468-1308
-#LRR: 1530-2490
-```{r}
-gene <- c('AT5G43740', 'AT5G43740', 'AT5G43740')
-domain <- c('CC', 'NBARC', 'LRR')
-start <- c(78, 468, 1530)
-stop <- c(162, 1308, 2490)
-coords2 <-data.frame(gene, domain, start, stop)
-coords2$domain <- factor(coords$domain, levels=c('CC', "NBARC", 'LRR'))
-plotter2 <- grey_variants %>% 
-  filter(Chrom == 5 & position >= (17564696+1313) & position <=(17569148-550)) %>%
-  mutate_at('position', as.numeric) %>% 
-  mutate(rel_pos=position-(17564696+1313))
-
-mutation2 <- ggplot(plotter2)+
-  ylim(0, 3)+
+        axis.ticks.y=element_blank())+
+  guides(fill=guide_legend(title="Domain"))
+  
+  D <- ggplot()+
+  geom_point(data=col_slider %>% filter(Gene==gene_name) %>% filter(!is.na(D)), 
+             aes(x=nuc_midpoint, y=D), size=1)+
+  geom_line(data=col_slider %>% filter(Gene==gene_name) %>% filter(!is.na(D)), 
+             aes(x=nuc_midpoint, y=D))+
+  geom_vline(data=coords, linetype='dashed', aes(xintercept=start, color=domain))+
+  geom_vline(data=coords, linetype='dashed', aes(xintercept=stop,  color=domain))+
+   scale_color_manual(values=c('CC'='#00997F', 
+                               'TIR'='orange',
+                               'NBARC'='#00BADE', 
+                               'LRR'='#9661FF'))+
+  ylim(-3, 3)+
+  xlim(0, gene_length)+
+  ylab("D")+
   theme_classic()+
+  theme(legend.position='none',
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.line.x=element_blank())
+  
+  Pi <- col_slider %>% filter(Gene==gene_name) %>% ggplot() + 
+    geom_point(aes(x=nuc_midpoint, y=Pi_site), size=1)+
+    geom_line(aes(x=nuc_midpoint, y=Pi_site))+
+  geom_vline(data=coords, linetype='dashed', aes(xintercept=start, color=domain))+
+  geom_vline(data=coords, linetype='dashed', aes(xintercept=stop,  color=domain))+
+  scale_color_manual(values=c('CC'='#00997F', 
+                               'TIR'='orange',
+                               'NBARC'='#00BADE', 
+                               'LRR'='#9661FF'))+
+  ylim(0, 0.1)+
   xlab('Nucleotide Position')+
-  geom_rect(data=coords2, aes(xmin=start, xmax=stop,
-                             ymin=0, ymax=0, color=domain),size=5)+
-   scale_color_manual(values=c('#00997F', '#00BADE', '#9661FF'))+
-  geom_point(aes(x=rel_pos, y=0.2, fill=type), shape=25, size=2)+
-  scale_fill_manual(values=c('black', 'white'))+
-  labs(fill='Mutation Type', color='Domain')+
-  xlim(0, 2589)+
-  theme(axis.title.y=element_blank(),
-        axis.text.y=element_blank(),
-        axis.ticks.y=element_blank(), 
-        axis.line.y=element_blank())
-
-
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\mut_case2.png', plot=mutation2, dpi='retina', width=5, height=3)
-
-mutation2
+  ylab(pi_exp)+
+  xlim(0, gene_length)+
+  theme_classic()+
+  theme(legend.position='none')
+  
+  return(domains+D+Pi+plot_layout(guides='collect', ncol = 1))
+ # return(Pi)
+}
 ```
 
 
 ```{r}
-Pi_AT5G43730 <- col_slider %>% filter(Gene=='AT5G43730') %>% ggplot() + 
-    geom_point(aes(x=nuc_midpoint, y=Pi_site), size=1)+
-    geom_line(aes(x=nuc_midpoint, y=Pi_site))+
- geom_vline(xintercept=82, linetype='dashed', color='#00997F')+
-  geom_vline(xintercept=186, linetype='dashed', color='#00997F')+
-  geom_vline(xintercept=472, linetype='dashed', color='#00BADE')+
-  geom_vline(xintercept=1311, linetype='dashed', color='#00BADE')+
-  geom_vline(xintercept=1534, linetype='dashed', color='#9661FF')+
-  geom_vline(xintercept=2472, linetype='dashed', color='#9661FF')+
-  ylim(0, 0.1)+
-  xlab('300bp Window Midpoint')+
-  ylab(pi_exp)+
-  xlim(0, 2547)+
-  theme_classic()+
-  theme(legend.position='none', 
-        axis.title.x=element_blank())
-Pi_AT5G43730
+AT5G43730 <- tripartite_plot('AT5G43730')
+AT5G43740 <- tripartite_plot('AT5G43740')
 
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\Pi_30.png', plot=Pi_AT5G43730, dpi='retina', width=4, height=1.1)
 
-Pi_AT5G43740 <- col_slider %>% filter(Gene=='AT5G43740') %>% ggplot() + 
-    geom_point(aes(x=nuc_midpoint, y=Pi_site), size=1)+
-    geom_line(aes(x=nuc_midpoint, y=Pi_site))+
-  geom_vline(xintercept=78, linetype='dashed', color='#00997F')+
-  geom_vline(xintercept=162, linetype='dashed', color='#00997F')+
-  geom_vline(xintercept=468, linetype='dashed', color='#00BADE')+
-  geom_vline(xintercept=1308, linetype='dashed', color='#00BADE')+
-  geom_vline(xintercept=1530, linetype='dashed', color='#9661FF')+
-  geom_vline(xintercept=2490, linetype='dashed', color='#9661FF')+
-  ylim(0, 0.1)+
-  xlim(0, 2589)+
-  ylab(pi_exp)+
-  theme_classic()+
-  theme(legend.position='none',
-        axis.title.x=element_blank())
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\AT5G43730.png', plot=AT5G43730, dpi='retina', width=120, height=80, unit='mm')
 
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\Pi_40.png', plot=Pi_AT5G43740, dpi='retina', width=4, height=1.1)
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\AT5G43740.png', plot=AT5G43740, dpi='retina', width=120, height=80, unit='mm')
+```
 
-Pi_AT5G43740
+##Extended View 
+RPP13 cluster: 'AT3G46530' 'AT3G46710' 'AT3G46730'
+       Gene                 Clade HV
+1 AT3G46730 Int14387_212_253_R_34  0
+2 AT3G46710 Int14387_212_251_L_60  0
+3 AT3G46530 Int14387_212_343_R_44  1
+
+```{r}
+#add interpro CC annotations since they are missing from pan-nlrome report...
+m1 <- c('AT3G46730', NA, NA, NA, NA, NA, 'Int14387_212_253_R_34', NA, 'CC', NA, 3, 124, 'non-hv', NA, NA, NA, NA)
+m2 <- c('AT3G46710', NA, NA, NA, NA, NA, 'Int14387_212_251_L_60', NA, 'CC', NA, 3, 124, 'non-hv', NA, NA, NA, NA)
+m3 <- c('AT3G46530', NA, NA, NA, NA, NA, 'Int14387_212_343_R_44', NA, 'CC', NA, 3, 124, 'non-hv', NA, NA, NA, NA)
+col_popgen <- rbind(col_popgen, m1) %>% rbind(m2) %>% rbind(m3)
+col_popgen$start <- col_popgen$start %>% as.integer()
+col_popgen$stop <- col_popgen$stop %>% as.integer()
 ```
 
 
 ```{r}
-D_AT5G43730 <- col_slider %>% filter(Gene=='AT5G43730') %>% filter(!is.na(D))%>%
-  ggplot() + 
-    geom_point(aes(x=nuc_midpoint, y=D), size=1)+
-    geom_line(aes(x=nuc_midpoint, y=D))+
-  geom_vline(xintercept=82, linetype='dashed', color='#00997F')+
-  geom_vline(xintercept=186, linetype='dashed', color='#00997F')+
-  geom_vline(xintercept=472, linetype='dashed', color='#00BADE')+
-  geom_vline(xintercept=1311, linetype='dashed', color='#00BADE')+
-  geom_vline(xintercept=1534, linetype='dashed', color='#9661FF')+
-  geom_vline(xintercept=2472, linetype='dashed', color='#9661FF')+
-  ylim(-3, 3)+
-  ylab("D")+
-  xlim(0, 2547)+
-  theme_classic()+
-  theme(legend.position='none',
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(), 
-        axis.line.x=element_blank())
+AT3G46530 <- tripartite_plot('AT3G46530')
+AT3G46710 <- tripartite_plot('AT3G46710')
+AT3G46730 <- tripartite_plot('AT3G46730')
 
-D_AT5G43730
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\AT3G46530.png', plot=AT3G46530, dpi='retina', width=4, height=3)
 
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\D_30.png', plot=D_AT5G43730, dpi='retina', width=4, height=1)
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\AT3G46710.png', plot=AT3G46710, dpi='retina', width=4, height=3)
 
-D_AT5G43740 <- col_slider %>% filter(Gene=='AT5G43740') %>% ggplot()+
-    geom_point(aes(x=nuc_midpoint, y=D), size=1)+
-    geom_line(aes(x=nuc_midpoint, y=D))+
-  geom_vline(xintercept=78, linetype='dashed', color='#00997F')+
-  geom_vline(xintercept=162, linetype='dashed', color='#00997F')+
-  geom_vline(xintercept=468, linetype='dashed', color='#00BADE')+
-  geom_vline(xintercept=1308, linetype='dashed', color='#00BADE')+
-  geom_vline(xintercept=1530, linetype='dashed', color='#9661FF')+
-  geom_vline(xintercept=2490, linetype='dashed', color='#9661FF')+
-  ylim(-3, 3)+
-  ylab("D")+
-  xlim(0, 2589)+
-  theme_classic()+
-  theme(legend.position='none',
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(), 
-        axis.line.x=element_blank())
-
-D_AT5G43740
-
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\D_40.png', plot=D_AT5G43740, dpi='retina', width=4, height=1)
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\AT3G46730.png', plot=AT3G46730, dpi='retina', width=4, height=3)
 ```
+
+
+
