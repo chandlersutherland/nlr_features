@@ -1,7 +1,9 @@
 ---
 title: "Violin plots"
 author: "Chandler Sutherland"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r}
@@ -10,7 +12,15 @@ library(ggplot2)
 library(ggsignif)
 library(ggpubr)
 library(ggbeeswarm)
+library(patchwork)
 ```
+
+Copyright (c) Chandler Sutherland
+Email: chandlersutherland@berkeley.edu
+
+Purpose: generate hv vs non-hvNLR violin plots of expression vs methylation.
+
+Intermediate processing steps are shown here, but figures can be recreated using just the numerical source data provided in Source `Data/Figure 2`.
 
 ```{r}
 #input data 
@@ -18,67 +28,89 @@ table <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Rese
 
 NLR_table <- table %>% filter(HV != 'all_genes')
 NLR_table$HV <- factor(NLR_table$HV , levels=c("non-hv", "hv"))
+fig2_source <- NLR_table %>% subset(select=c('Gene', 'HV', 'log2_TPM', 'meth_percentage', 'te_dist'))
 ```
 
+
 ```{r}
-#expression
+#save source data. To reproduce these plots, un-comment reading in the fig2_source and start code from there  
+write.csv(fig2_source, file="./Source Data/Figure 2/2A-C/per_NLR_features.csv")
+#fig2_source <- read.csv("./Source Data/Figure 2/2A-C/per_NLR_features.csv")
+```
 
-#determing the sample size 
-NLR_table2 <- NLR_table %>% filter(!is.na(log2_TPM)) %>% group_by(HV) %>% mutate(n_exp = n()) %>% mutate(exp_label = paste(HV, n_exp, sep="\nn="))
-NLR_table2$exp_label <- factor(NLR_table2$exp_label, levels=c('non-hv\nn=97', 'hv\nn=31'))
+Fig 2a: Expression in log2(TPM)
+```{r}
+#create a sample size label
+NLR_table2 <- fig2_source %>% 
+  filter(!is.na(log2_TPM)) %>% 
+  group_by(HV) %>% 
+  mutate(n_exp = n()) %>% 
+  mutate(exp_label = paste(HV, n_exp, sep="\nn="))
+levels <- NLR_table2 %>% pull(exp_label) %>% unique()
+NLR_table2$exp_label <- factor(NLR_table2$exp_label, levels=c(levels[1], levels[2]))
 
+#plot 
 p1 <- ggplot(NLR_table2,
        aes(x=exp_label, y=log2_TPM, fill=HV))+
     geom_violin(lwd=0.30)+
   geom_quasirandom(alpha=0.3, size=0.5)+
    ylim(0,8.8)+
-   geom_signif(comparisons=list(c('non-hv\nn=97', 'hv\nn=31')), 
+   geom_signif(comparisons=list(c(levels[1], levels[2])), 
                map_signif_level = TRUE, y_position = c(8, 7), test=wilcox.test, textsize=2, size=0.25)+
     scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
   theme_classic()+
     theme(legend.position='none', text=element_text(size=10), 
           axis.title=element_blank())+
-  scale_x_discrete(labels=c('non-hv\nn=97', 'hv\nn=31'))
+  scale_x_discrete(labels=c(levels[1], levels[2]))
 
 p1
 
+#unpaired wilcox rank sum test 
 compare_means(log2_TPM~HV, NLR_table, method = 'wilcox.test', paired = FALSE)
-
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\tpm.png', plot=p1, dpi='retina', width=2, height=1.5)
 ```
 
+Fig 2B: %CG methylation 
 ```{r}
-#methylation
-NLR_table3 <- NLR_table %>% filter(!is.na(meth_percentage)) %>% group_by(HV) %>% mutate(n_meth = n()) %>% mutate(meth_label = paste0(HV,"\n", "n=",n_meth))
-NLR_table3$meth_label <- factor(NLR_table3$meth_label, levels=c('non-hv\nn=96', 'hv\nn=31'))
+# sample size label
+NLR_table3 <- fig2_source %>% filter(!is.na(meth_percentage)) %>% group_by(HV) %>% mutate(n_meth = n()) %>% mutate(meth_label = paste0(HV,"\n", "n=",n_meth))
+levels_m <- NLR_table3 %>% pull(meth_label) %>% unique()
+NLR_table3$meth_label <- factor(NLR_table3$meth_label, levels=c(levels_m[1], levels_m[2]))
 
+#plot
 p2 <- ggplot(NLR_table3,
        aes(x=meth_label, y=meth_percentage, fill=HV))+
     geom_violin(lwd=0.3)+
   geom_quasirandom(alpha=0.3, size=0.5)+
   ylim(0,100)+
-   geom_signif(comparisons=list(c('non-hv\nn=96', 'hv\nn=31')), 
+   geom_signif(comparisons=list(c(levels_m[1], levels_m[2])), 
                map_signif_level = TRUE, y_position = c(90, 80), test=wilcox.test, textsize=2, size=0.25)+
     scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
   theme_classic()+
     theme(legend.position='none', text=element_text(size=10), axis.title=element_blank())
 
-compare_means(meth_percentage~HV, NLR_table, method = 'wilcox.test', paired = FALSE)
+p2
 
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\per_meth.png', plot=p2, dpi='retina', width=2, height=1.5)
+#stats 
+compare_means(meth_percentage~HV, NLR_table, method = 'wilcox.test', paired = FALSE)
 ```
 
+Fig 2C: Distance to nearest TE 
 ```{r}
-#te distance 
-NLR_table3 <- NLR_table %>% filter(!is.na(te_dist)) %>% group_by(HV) %>% mutate(n_te = n()) %>% mutate(te_label = paste0(HV,"\n", "n=",n_te))
-NLR_table3$te_label <- factor(NLR_table3$te_label, levels=c('non-hv\nn=97', 'hv\nn=35'))
+#sample size label
+NLR_table3 <- fig2_source %>% 
+  filter(!is.na(te_dist)) %>% 
+  group_by(HV) %>% 
+  mutate(n_te = n()) %>% 
+  mutate(te_label = paste0(HV,"\n", "n=",n_te))
+levels_t <- NLR_table3 %>% pull(te_label) %>% unique()
+NLR_table3$te_label <- factor(NLR_table3$te_label, levels=c(levels_t[1], levels_t[2]))
 
+#plot
 p3 <- ggplot(NLR_table3,
        aes(x=te_label, y=te_dist, fill=HV))+
     geom_violin(lwd=0.3)+
    ylim(0,35)+
   geom_quasirandom(alpha=0.3, size=0.5)+
-   # geom_point(position = position_jitterdodge(), alpha=0.3, size=0.5)+
    geom_signif(comparisons=list(c('non-hv\nn=97', 'hv\nn=35')), 
                map_signif_level = TRUE, y_position = c(32, 32), test=wilcox.test, textsize=2, size=0.25)+
     scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
@@ -86,14 +118,19 @@ p3 <- ggplot(NLR_table3,
     theme(legend.position='none', text=element_text(size=10), 
           axis.title=element_blank())
 
+#unpaired wilcox rank sum test 
 compare_means(te_dist~HV, NLR_table, method = 'wilcox.test', paired = FALSE)
-
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\te.png', plot=p3, dpi='retina', width=2, height=1.5)
 ```
 
 ```{r}
 #perform fisher's test on HV status vs internal TE
 NLR_table3 <- NLR_table3 %>% mutate('int_te'=if_else(te_dist == 0, 'TRUE', 'FALSE'))
 fisher.test(NLR_table3$HV, NLR_table3$int_te)
+```
+```{r}
+#combine plots and save 
+panel <- p1+p2+p3
+
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_2a_c.svg', plot=panel, dpi=1000, width=180, height=50, unit='mm')
 ```
 
