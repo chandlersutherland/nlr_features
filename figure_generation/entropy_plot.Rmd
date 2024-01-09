@@ -2,12 +2,19 @@
 title: "hv_plot"
 author: "Chandler Sutherland"
 date: "2023-09-11"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
 ```
+
+Copyright (c) Chandler Sutherland
+Email: chandlersutherland@berkeley.edu
+
+Purpose: generate a named entropy plot to demonstrate hv and non-hvNLRs
+
+Intermediate processing steps are shown here, with all input files available for download from Zenodo. Figures can be recreated using just the numerical source data provided in `Source Data/Figure 1` and `/EV Figure 1`.
 
 ```{r}
 library(tidyverse)
@@ -16,17 +23,12 @@ library(stringr)
 library(ggrepel)
 ```
 
-
-Copyright (c) Chandler Sutherland
-Email: chandlersutherland@berkeley.edu
-
-Purpose: generate a named entropy plot to demonstrate hv and non-hvNLRs
 ```{r}
 #load in Daniil's entropy by position table 
-Atha_Ent <- read_delim("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\Athaliana_NLR_Entropy.tsv")
+Atha_Ent <- read_delim("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\Athaliana_NLR_Entropy.tsv")
 
-#load in the gene table 
-Gene_table <- read_delim("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\Atha_SnkMk_GeneTable.txt",delim = "\t")
+#load in the gene table, which provides HV information by clade 
+Gene_table <- read_delim("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\Atha_NLRome_GeneTable.txt",delim = "\t")
 
 #filter to just Col-0 
 Col_Ent <- Atha_Ent %>% filter(str_detect(Name, 'ATHALIANA')) %>% separate(Name, c(NA, 'Gene'))
@@ -37,13 +39,7 @@ Col_table <- Gene_table %>%
   distinct()
 
 #read in common names 
-names <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//col0_per_domain_stats.tsv") %>% 
-  dplyr::select(c('Gene', 'name')) %>% 
-  distinct()
-
-#collapse multiple names 
-names[22,2]='VICTR'
-names[116,2]='SOC3'
+names <- read_csv("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\Atha_NLR_common_names.csv") 
 
 #tack common names onto the subset gene table 
 Col_meta <- Col_table %>% merge(names)
@@ -54,28 +50,18 @@ named_ent <- left_join(Col_Ent, Col_meta, by=c('Gene', 'Clade')) %>% drop_na(HV)
 Fig 1: mean entropy per NLR 
 ```{r}
 #create a df with the mean entropy
-col_seq <- named_ent %>% group_by(Gene, HV, name) %>% summarise(mean_ent = mean(Ent), 
-                                                          median_ent = median(Ent),
-                                                          top_10 = quantile(Ent,probs = 0.9,na.rm=T),
-                                                          top_5 = quantile(Ent,probs = 0.95,na.rm=T),
-                                                          top_2 = quantile(Ent,probs = 0.98,na.rm=T),
-                                                          top_1 = quantile(Ent,probs = 0.99,na.rm=T))
+fig1_source <- named_ent %>% 
+  group_by(Gene, HV, name) %>% 
+  summarise(mean_ent = mean(Ent))
 
-#create a labelled histogram 
-hist <- ggplot() + 
-  geom_histogram(col_seq, mapping=aes(x=mean_ent, fill=as.factor(-HV)), col=I('grey'), bins=30)
+#save source data 
+write.csv(fig1_source, file="./Source Data/Figure 1/Col0_mean_entropy.csv")
+#read in source data 
+#fig1_source <- read.csv("./Source Data/Figure 1/Col0_mean_entropy.csv")
 
-real_bin <- ggplot_build(hist)$data[[1]] %>% subset(select=c(y, xmin, xmax))
-breaks <- real_bin$xmin %>% unique()
-plot_df <- col_seq %>% 
-  mutate(bin=as.factor(as.numeric(cut(mean_ent, breaks=breaks))))%>% 
-  arrange(mean_ent)
-counts <- plot_df %>% group_by(bin) %>% count
-label_df <- plot_df %>% filter(!is.na(name)) %>% left_join(counts, by='bin')
-x <- label_df %>% subset(select=c('name', 'bin'))
-
+#create a histogram
 mean_entropy <- ggplot() + 
-  geom_histogram(plot_df, mapping=aes(x=mean_ent, fill=as.factor(-HV)), col=I('grey'))+
+  geom_histogram(fig1_source, mapping=aes(x=mean_ent, fill=as.factor(-HV)), col=I('grey'))+
   xlab("Mean Entropy (bits)")+
   ylab("Number of NLRs")+
   theme_classic() +
@@ -88,13 +74,6 @@ mean_entropy
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_1a.svg', plot=mean_entropy, dpi=1000, width=87, height=55, units='mm')
 ```
 
-
-```{r}
-#save source data 
-fig1_source <- plot_df %>% subset(select=c('Gene', 'HV', 'name', 'mean_ent'))
-write.csv(fig1_source, file="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Source Data\\Figure 1\\Col0_mean_entropy.csv")
-```
-
 EV fig 1: count vs entropy at the tenth highest entropy position 
 ```{r}
 #create a df with the tenth highest entropy position 
@@ -102,19 +81,26 @@ col_r10 <- named_ent %>% group_by(Gene) %>% slice_max(Ent,n=10) %>% slice_min(En
   ungroup
 
 #create a labelled histogram 
-
 hist <- ggplot() + 
   geom_histogram(col_r10, mapping=aes(x=Ent, fill=as.factor(-HV)), col=I('grey'), bins=30)
 
-layer_data(hist)
+#create a column, bins2, that allows for plotting of label and create label_df 
 real_bin <- ggplot_build(hist)$data[[1]] %>% subset(select=c(y, xmin, xmax))
 breaks <- real_bin$xmin %>% unique()
 plot_df <- col_r10 %>% mutate(bins2=as.factor(as.numeric(cut(Ent, breaks=breaks))))%>% arrange(Ent)
-counts <- plot_df %>% group_by(bins2) %>% count
-label_df <- plot_df %>% filter(!is.na(name)) %>% left_join(counts, by='bins2')
 
+#save source data 
+ev_fig1_source <- plot_df %>% subset(select=c('Gene', 'HV', 'name', 'Ent', 'bins2'))
+write.csv(ev_fig1_source, file='./Source Data/Figure 1/Col0_mean_entropy.csv')
+#ev_fig1_source <- read.csv(file='./Source Data/Figure 1/Col0_mean_entropy.csv')
+
+#create label_df
+counts <- ev_fig1_source %>% group_by(bins2) %>% count
+label_df <- ev_fig1_source %>% filter(!is.na(name)) %>% left_join(counts, by='bins2')
+
+#plot 
 r10 <- ggplot() + 
-  geom_histogram(plot_df, mapping=aes(x=Ent, fill=as.factor(-HV)), col=I('grey'), bins=30)+
+  geom_histogram(ev_fig1_source, mapping=aes(x=Ent, fill=as.factor(-HV)), col=I('grey'), bins=30)+
   geom_vline(xintercept = 1.5,linetype="dotted")+
   geom_label_repel(label_df, 
                    mapping=aes(label=name, x=Ent, y=n, color=as.factor(-HV)), 
@@ -131,9 +117,4 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 ```
 
 
-```{r}
-#save source data 
-ev_fig1_source <- plot_df %>% subset(select=c('Gene', 'HV', 'name', 'Ent'))
-write.csv(ev_fig1_source, file="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Source Data\\EV Figure 1\\Col0_tenthpos_entropy.csv")
-```
 
