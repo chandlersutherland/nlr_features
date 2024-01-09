@@ -41,7 +41,7 @@ write.csv(fig2_source, file="./Source Data/Figure 2/2A-C/per_NLR_features.csv")
 ```
 
 Fig 2a: Expression in log2(TPM)
-```{r}
+```{r Fig2a}
 #create a sample size label
 NLR_table2 <- fig2_source %>% 
   filter(!is.na(log2_TPM)) %>% 
@@ -72,7 +72,7 @@ compare_means(log2_TPM~HV, NLR_table, method = 'wilcox.test', paired = FALSE)
 ```
 
 Fig 2B: %CG methylation 
-```{r}
+```{r Fig2B}
 # sample size label
 NLR_table3 <- fig2_source %>% filter(!is.na(meth_percentage)) %>% group_by(HV) %>% mutate(n_meth = n()) %>% mutate(meth_label = paste0(HV,"\n", "n=",n_meth))
 levels_m <- NLR_table3 %>% pull(meth_label) %>% unique()
@@ -97,7 +97,7 @@ compare_means(meth_percentage~HV, NLR_table, method = 'wilcox.test', paired = FA
 ```
 
 Fig 2C: Distance to nearest TE 
-```{r}
+```{r Fig2C}
 #sample size label
 NLR_table3 <- fig2_source %>% 
   filter(!is.na(te_dist)) %>% 
@@ -120,6 +120,7 @@ p3 <- ggplot(NLR_table3,
     theme(legend.position='none', text=element_text(size=10), 
           axis.title=element_blank())
 
+p3
 #unpaired wilcox rank sum test 
 compare_means(te_dist~HV, NLR_table, method = 'wilcox.test', paired = FALSE)
 ```

@@ -79,7 +79,7 @@ p1 <- ggplot(NLR_table2,
 p1
 ```
 
-![](violin_plots_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](violin_plots_files/figure-gfm/Fig2a-1.png)<!-- -->
 
 ``` r
 #unpaired wilcox rank sum test 
@@ -114,7 +114,7 @@ p2 <- ggplot(NLR_table3,
 p2
 ```
 
-![](violin_plots_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](violin_plots_files/figure-gfm/Fig2B-1.png)<!-- -->
 
 ``` r
 #stats 
@@ -151,6 +151,12 @@ p3 <- ggplot(NLR_table3,
     theme(legend.position='none', text=element_text(size=10), 
           axis.title=element_blank())
 
+p3
+```
+
+![](violin_plots_files/figure-gfm/Fig2C-1.png)<!-- -->
+
+``` r
 #unpaired wilcox rank sum test 
 compare_means(te_dist~HV, NLR_table, method = 'wilcox.test', paired = FALSE)
 ```
