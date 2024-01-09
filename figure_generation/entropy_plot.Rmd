@@ -1,5 +1,5 @@
 ---
-title: "hv_plot"
+title: "entropy_plot"
 author: "Chandler Sutherland"
 date: "2023-09-11"
 output: github_document
@@ -24,11 +24,14 @@ library(ggrepel)
 ```
 
 ```{r}
+#Change to your path to the zenodo download to repeat 
+zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
+
 #load in Daniil's entropy by position table 
-Atha_Ent <- read_delim("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\Athaliana_NLR_Entropy.tsv")
+Atha_Ent <- read_delim(paste(zenodo_path, "Athaliana_NLR_Entropy.tsv", sep=""))
 
 #load in the gene table, which provides HV information by clade 
-Gene_table <- read_delim("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\Atha_NLRome_GeneTable.txt",delim = "\t")
+Gene_table <- read_delim(paste(zenodo_path, "Atha_NLRome_GeneTable.txt", sep=""),delim = "\t")
 
 #filter to just Col-0 
 Col_Ent <- Atha_Ent %>% filter(str_detect(Name, 'ATHALIANA')) %>% separate(Name, c(NA, 'Gene'))
@@ -47,8 +50,9 @@ Col_meta <- Col_table %>% merge(names)
 #add back on to the entropy table 
 named_ent <- left_join(Col_Ent, Col_meta, by=c('Gene', 'Clade')) %>% drop_na(HV)
 ```
-Fig 1: mean entropy per NLR 
-```{r}
+## Fig 1: mean entropy per NLR 
+Added labels in illustrator
+```{r Fig1}
 #create a df with the mean entropy
 fig1_source <- named_ent %>% 
   group_by(Gene, HV, name) %>% 
@@ -74,8 +78,9 @@ mean_entropy
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_1a.svg', plot=mean_entropy, dpi=1000, width=87, height=55, units='mm')
 ```
 
-EV fig 1: count vs entropy at the tenth highest entropy position 
-```{r}
+## EV fig 1: count vs entropy at the tenth highest entropy position 
+Use geom_repel to add labels since they are more spread out 
+```{r EVFig_1}
 #create a df with the tenth highest entropy position 
 col_r10 <- named_ent %>% group_by(Gene) %>% slice_max(Ent,n=10) %>% slice_min(Ent,n=1,with_ties = FALSE) %>% 
   ungroup
