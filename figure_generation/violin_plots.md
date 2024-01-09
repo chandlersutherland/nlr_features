@@ -9,8 +9,8 @@ Purpose: generate hv vs non-hvNLR violin plots of expression,
 methylation, and TE distance.
 
 Intermediate processing steps are shown here, but figures can be
-recreated using just the numerical source data provided in Source
-`Data/Figure 2`.
+recreated using just the numerical source data provided in
+`Source Data/Figure 2`.
 
 ``` r
 library(tidyverse)
@@ -36,8 +36,11 @@ library(patchwork)
 ```
 
 ``` r
+#paste your path to the zenodo download to repeat 
+zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
+
 #input data 
-table <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
+table <- readxl::read_xlsx(path=paste(zenodo_path, "all_gene_table.xlsx", sep=''))
 
 NLR_table <- table %>% filter(HV != 'all_genes')
 NLR_table$HV <- factor(NLR_table$HV , levels=c("non-hv", "hv"))
@@ -183,6 +186,8 @@ fisher.test(NLR_table3$HV, NLR_table3$int_te)
     ## sample estimates:
     ## odds ratio 
     ##   5.909507
+
+HV status is predictive of a TE within the genic sequence (p=3.63e-05)
 
 ``` r
 #combine plots and save 
