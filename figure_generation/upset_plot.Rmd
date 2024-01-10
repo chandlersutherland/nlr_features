@@ -1,55 +1,48 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Confounding variable analysis by Stratification"
+output: github_document
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+```
+
+Copyright (c) Chandler Sutherland Email: [chandlersutherland\@berkeley.edu](mailto:chandlersutherland@berkeley.edu){.email}
+
+Purpose: investigate potential confounding factors by using data stratification and repeating pairwise comparisons.
+
+Intermediate processing steps are shown here, and figures can be recreated using just the numerical source data provided in `Source Data/Figure 3/3A`.
 
 ```{r}
 library(tidyverse)
 library(ggplot2)
 library(openxlsx)
-library(ComplexUpset)
 library(ggsignif)
 library(ggpubr)
 library(ggrepel)
-library(rstatix)
-library(psych)
 library(patchwork)
 ```
-Goal: show that stratifying the data by subgroup does not impact differences in features 
 
 ```{r}
-#read in the methylation, expression, and TE distance for all genes, filter to NLRs
-all_gene_table <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
-NLR_table <- all_gene_table %>% filter(HV != 'all_genes')
+#Change to your path to the zenodo download to repeat 
+zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
 
-#read in the cluster information and N-term status 
-cluster <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\chae_2020_supplemental.xlsx")
-table <- merge(NLR_table, cluster, by.x='Gene', by.y='gene', all.x=TRUE)
+#load in all gene data, filter to NLRs 
+NLR_table <- read.csv(paste(zenodo_path, 'NLR_gene_table.csv')) %>% subset(select=-c(X, `...1`)) %>%
+  dplyr::rename('common_name'='name')
 ```
 
-"There are  35 HV genes in my working table and  97  non-HV genes in my working table."
+Create a dataframe with the column subgroup, which has clustered/singleton and CNL/TNL information
 
 ```{r}
-# Create a dataframe with the column subgroup, which has clustered/singleton and CNL/TNL information 
-alt <- table %>% 
-  mutate(cluster=case_when(whyCluster=='similarity' ~ 'singleton', #removing exclusively similarity based clusters, only distance 
-                           .default=cluster)) %>% 
-  mutate(clustered=case_when(cluster!='singleton' ~ 'clustered', 
-                             cluster=='singleton' ~ 'singleton', 
-                             whyCluster=='similarity' ~ 'singleton')) %>%
-  filter(Nterm %in% c('C', 'T')) %>% #remove X domain and RNLs 
+alt <- NLR_table %>%
+  filter(Nterm %in% c('C', 'T')) %>% #remove RNL and XNLs
   mutate(domain=case_match(Nterm, 'C' ~ 'CNL', 
-                           'T' ~ 'TNL')) 
-
-# add information missing from Chae 2020 classifications 
-index <- which(alt$gene == 'AT4G19050')
-alt[index, 2] = 'Chr4'
-alt[index, 20] = 'singleton'
-alt[index, 21] = 'CNL'
+                           'T' ~ 'TNL'))
 ```
 
+Fisher test of independence between HV status, cluster status, and domain status
 
-Fisher test of independence between HV status and cluster status 
 ```{r}
 cont_table <- alt %>% 
   group_by(HV, clustered) %>% 
@@ -58,19 +51,35 @@ cont_table <- alt %>%
   column_to_rownames('HV') %>% 
   as.matrix()
 fisher.test(cont_table)
+
+cont_table2 <- alt %>% 
+  group_by(HV, domain) %>% 
+  summarize(n=n()) %>% 
+  pivot_wider(names_from = c('domain'), values_from='n') %>% 
+  column_to_rownames('HV') %>% 
+  as.matrix()
+fisher.test(cont_table2)
 ```
-HV status and cluster status are independent 
+
+HV status and cluster status are independent, and HV status and domain are independent.
 
 ```{r}
+#write/read source Data 
+write.csv(alt, file="./Source Data/Figure 3/3A/NLR_feature_by_strata.csv")
+#read in source data 
+#alt <- read.csv("./Source Data/Figure 3/3A/NLR_feature_by_strata.csv")
+```
+
+## Expression stratification
+
+Apply Benjamini-Hochberg correction across strata to account for multiple testing
+
+```{r expr_strat}
+#pivot for easier stratification 
 pivot_alt <- alt %>% 
   pivot_longer(cols=c('clustered', 'domain'), values_to='subgroup') 
-```
 
-
-```{r}
 pivot_alt$HV <- factor(pivot_alt$HV, levels=c('non-hv', 'hv'))
-
-
 y_label <- expression('log'[2]*'(TPM)')
 
 
@@ -87,6 +96,7 @@ p_val <- pivot_alt %>% compare_means(log2_TPM~HV, ., group.by='subgroup', paired
                          p.adj >= .01 & p.adj < .05 ~ '*', 
                          p.adj > .05 ~ 'ns'
                          ))
+p_val 
 
 pivot_alt %>% filter(!is.na(log2_TPM)) %>% group_by(HV, subgroup) %>% summarize(n=n())
 
@@ -103,7 +113,7 @@ expr_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   xlab('')+
   ylim(0, 9.5)+
   scale_x_discrete(breaks=c("singleton","clustered", "CNL", "TNL"),
-        labels=c("singletons\nn=28,7", "clustered\nn=63,24", "CNLs\nn=30,12", "TNLs\nn=61,19"))+
+        labels=c("singletons\nn=34,12", "clustered\nn=57,19", "CNLs\nn=30,12", "TNLs\nn=61,19"))+
   theme(legend.position='none', 
         text = element_text(size=10, family='sans'), 
         axis.text.y=element_text(size=10))+
@@ -111,11 +121,13 @@ expr_p <- pivot_alt %>% arrange(subgroup, HV) %>%
             mapping=aes(x=x, y=y, label=stars),
             size = 10/.pt,
             show.legend=FALSE)
-
 ```
 
-```{r}
-p_val <- pivot_alt %>% compare_means(meth_percentage~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
+## Methylation Stratification
+
+```{r meth_strat}
+p_val <- pivot_alt %>% 
+  compare_means(meth_percentage~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
   arrange(subgroup, p.adj) %>% 
   unique() %>%
   mutate(x=seq(from=1, to=group_n)) %>% 
@@ -125,6 +137,7 @@ p_val <- pivot_alt %>% compare_means(meth_percentage~HV, ., group.by='subgroup',
                          p.adj >= .01 & p.adj < .05 ~ '*', 
                          p.adj > .05 ~ 'ns'
                          ))
+p_val 
 
 #print sample sizes
 pivot_alt %>% filter(!is.na(meth_percentage)) %>% group_by(HV, subgroup) %>% summarize(n=n())
@@ -142,7 +155,7 @@ meth_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   ylim(0,100)+
   xlab('')+
   scale_x_discrete(breaks=c("singleton","clustered", "CNL", "TNL"),
-        labels=c("singletons\nn=27,7", "clustered\nn=63,24", "CNLs\nn=29,12", "TNLs\nn=61,19"))+
+        labels=c("singletons\nn=33,12", "clustered\nn=57,19", "CNLs\nn=29,12", "TNLs\nn=61,19"))+
   theme(legend.position='none', 
         text = element_text(size=10, family='sans'), 
         axis.text.y=element_text(size=10))+
@@ -151,7 +164,10 @@ meth_p <- pivot_alt %>% arrange(subgroup, HV) %>%
             size = 10/.pt,
             show.legend=FALSE)
 ```
-```{r}
+
+## TE distance stratification
+
+```{r te_strat}
 p_val <- pivot_alt %>% compare_means(te_dist~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
   arrange(subgroup, p.adj) %>% 
   unique() %>%
@@ -162,6 +178,8 @@ p_val <- pivot_alt %>% compare_means(te_dist~HV, ., group.by='subgroup', paired=
                          p.adj >= .01 & p.adj < .05 ~ '*', 
                          p.adj > .05 ~ 'ns'
                          ))
+
+p_val 
 
 te_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   ggplot()+
@@ -175,7 +193,6 @@ te_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   ylab('TE Distance')+
   xlab('')+
   ylim(0, 38)+
-  #ggtitle('Vegetative Tissue') +
   theme(legend.position='none', 
         text = element_text(size=10, family='sans'), 
         axis.text.y=element_text(size=10))+
@@ -183,17 +200,36 @@ te_p <- pivot_alt %>% arrange(subgroup, HV) %>%
             mapping=aes(x=x, y=y, label=stars),
             size = 10/.pt,
             show.legend=FALSE)+
-  scale_x_discrete(breaks=c("all","singleton","clustered", "CNL", "TNL"),
-        labels=c("all NLRs\nn=97,35", "singletons\nn=28,7", "clustered\nn=63,28", "CNLs\nn=30,16", "TNLs\nn=61,19"))
+  scale_x_discrete(breaks=c("singleton","clustered", "CNL", "TNL"),
+        labels=c("singletons\nn=34,13", "clustered\nn=57,22", "CNLs\nn=30,16", "TNLs\nn=61,19"))
 
 
 pivot_alt %>% group_by(HV, subgroup) %>% summarize(n=n())
-split_upset <- expr_p+meth_p+te_p + plot_layout(guides='collect', ncol=1)
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\upset_2.png', plot=split_upset, dpi='retina', width=90, height=110, units = 'mm')
 ```
+
+# Figure 3A: split violin plots by strata
+
+```{r split_upset}
+split_upset <- expr_p+meth_p+te_p + plot_layout(guides='collect', ncol=1)
+split_upset
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_3a.svg', plot=split_upset, dpi=1000, width=80, height=110, units = 'mm')
+```
+
+Statistics for within hv and within non-hv differences across strata
 
 ```{r}
-alt
+#are the distributions between hv and non-hv different across strata? 
+kruskal.test(log2_TPM~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
+kruskal.test(log2_TPM~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
+
+kruskal.test(meth_percentage~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
+kruskal.test(meth_percentage~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
+
+kruskal.test(te_dist~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
+kruskal.test(te_dist~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
+
+p.adjust(c(0.8705, 0.04255, 0.5573), method='BH')
+p.adjust(c(0.345, 0.6333, 0.619), method='BH')
 ```
 
-
+Nope, subseting the hv and non-hv groups does not change distribution across strata.
