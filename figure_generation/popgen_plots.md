@@ -1,21 +1,18 @@
----
-title: "popgen_plots"
-author: "Chandler Sutherland"
-date: "2023-08-15"
-output: github_document
----
+popgen_plots
+================
+Chandler Sutherland
+2023-08-15
 
-Copyright (c) Chandler Sutherland Email: [chandlersutherland\@berkeley.edu](mailto:chandlersutherland@berkeley.edu){.email}
+Copyright (c) Chandler Sutherland Email:
+<chandlersutherland@berkeley.edu>
 
 Purpose: Plot population genetics statistics of hv and non-hvNLRs
 
-Intermediate processing steps are shown here, but figures can be recreated using just the numerical source data provided in `Source Data/Figure 5` and `Source Data/Figure 6`.
+Intermediate processing steps are shown here, but figures can be
+recreated using just the numerical source data provided in
+`Source Data/Figure 5` and `Source Data/Figure 6`.
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
-```
-
-```{r}
+``` r
 library(ggplot2)
 library(ggsignif)
 library(ggpubr)
@@ -25,9 +22,10 @@ library(openxlsx)
 library(patchwork)
 ```
 
-Gather and clean the necessary datasets, write intermediate files to zenodo
+Gather and clean the necessary datasets, write intermediate files to
+zenodo
 
-```{r}
+``` r
 #zenodo path 
 zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
 
@@ -56,9 +54,10 @@ write.csv(popgen_per_domain %>% subset(select=c('Gene', 'name', 'HV', 'domain', 
           'Source Data//EV Figure 4//EV 4C//popgen_per_domain.csv')
 ```
 
-For gene wide statistics, use just the CDS. Already in the NLR_gene_table
+For gene wide statistics, use just the CDS. Already in the
+NLR_gene_table
 
-```{r}
+``` r
 #read in gene-wide data from NLR gene table 
 #subset to relevant columns and add sample size label 
 NLR_popgen <- read.csv(paste(zenodo_path, 'NLR_gene_table.csv')) %>% 
@@ -75,7 +74,7 @@ write.csv(NLR_popgen, 'Source Data//Figure 6//6ABC//NLR_popgen.csv')
 
 Read in the sliding window analysis
 
-```{r}
+``` r
 #read in sliding window analysis 
 x <- col_popgen %>% 
   filter(domain=='CDS') %>% 
@@ -92,7 +91,7 @@ all_gene <- read.csv(paste(zenodo_path, 'all_gene_table.csv'))
 
 Read in, combine, and clean positive selection results
 
-```{r}
+``` r
 #read in hyphy positive selection results 
 fel_results<-read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//fel_results.csv")%>%
   dplyr::rename('Clade'='clade')
@@ -135,7 +134,7 @@ Per domain plots
 
 Pi stats:
 
-```{r}
+``` r
 cds <- compare_means(Pi~HV, col_popgen %>% filter(domain=='CDS'), method='wilcox.test', paired=FALSE)$p
 cc <- compare_means(Pi~HV, col_popgen %>% filter(domain=='CC'), method='wilcox.test', paired=FALSE)$p
 tir <- compare_means(Pi~HV, col_popgen %>% filter(domain=='TIR'), method='wilcox.test', paired=FALSE)$p
@@ -145,14 +144,49 @@ lrr <- compare_means(Pi~HV, col_popgen %>% filter(domain=='LRR'), method='wilcox
 pvalues <- c(cds, cc, tir, nbarc, lrr)
 pvalues_adjust <- p.adjust(pvalues, method = 'BH', n = length(pvalues))
 print(pvalues_adjust)
+```
 
+    ## [1] 1.898108e-17 8.195799e-06 7.266158e-09 2.631707e-16 2.733286e-17
+
+``` r
 compare_means(Pi~domain, col_popgen %>% filter(HV=='hv'), method='wilcox.test', paired=FALSE)
+```
+
+    ## # A tibble: 10 × 8
+    ##    .y.   group1 group2        p  p.adj p.format p.signif method  
+    ##    <chr> <chr>  <chr>     <dbl>  <dbl> <chr>    <chr>    <chr>   
+    ##  1 Pi    CDS    CC     0.511    1      0.51052  ns       Wilcoxon
+    ##  2 Pi    CDS    TIR    0.828    1      0.82752  ns       Wilcoxon
+    ##  3 Pi    CDS    NBARC  0.00132  0.012  0.00132  **       Wilcoxon
+    ##  4 Pi    CDS    LRR    0.404    1      0.40365  ns       Wilcoxon
+    ##  5 Pi    CC     TIR    0.185    1      0.18483  ns       Wilcoxon
+    ##  6 Pi    CC     NBARC  0.289    1      0.28853  ns       Wilcoxon
+    ##  7 Pi    CC     LRR    0.361    1      0.36137  ns       Wilcoxon
+    ##  8 Pi    TIR    NBARC  0.114    0.91   0.11419  ns       Wilcoxon
+    ##  9 Pi    TIR    LRR    0.885    1      0.88451  ns       Wilcoxon
+    ## 10 Pi    NBARC  LRR    0.000418 0.0042 0.00042  ***      Wilcoxon
+
+``` r
 compare_means(Pi~domain, col_popgen %>% filter(HV=='non-hv'), method='wilcox.test', paired=FALSE)
 ```
 
+    ## # A tibble: 10 × 8
+    ##    .y.   group1 group2        p  p.adj p.format p.signif method  
+    ##    <chr> <chr>  <chr>     <dbl>  <dbl> <chr>    <chr>    <chr>   
+    ##  1 Pi    CDS    CC     0.246    1      0.24631  ns       Wilcoxon
+    ##  2 Pi    CDS    TIR    0.829    1      0.82926  ns       Wilcoxon
+    ##  3 Pi    CDS    NBARC  0.000458 0.0046 0.00046  ***      Wilcoxon
+    ##  4 Pi    CDS    LRR    0.848    1      0.84805  ns       Wilcoxon
+    ##  5 Pi    CC     TIR    0.439    1      0.43882  ns       Wilcoxon
+    ##  6 Pi    CC     NBARC  0.840    1      0.84032  ns       Wilcoxon
+    ##  7 Pi    CC     LRR    0.314    1      0.31404  ns       Wilcoxon
+    ##  8 Pi    TIR    NBARC  0.0148   0.12   0.01480  *        Wilcoxon
+    ##  9 Pi    TIR    LRR    0.991    1      0.99125  ns       Wilcoxon
+    ## 10 Pi    NBARC  LRR    0.00510  0.046  0.00510  **       Wilcoxon
+
 Plot:
 
-```{r}
+``` r
 pi_exp <- expression(pi)
 
 #create a sample size df for x label 
@@ -163,7 +197,7 @@ label_df <- sample_size %>%
          d_label=paste(domain, '\n', `D_non-hv`, ',', D_hv, sep=""))
 ```
 
-```{r Fig5A_2}
+``` r
 p7 <- ggplot(col_popgen)+
   geom_boxplot(aes(x=domain, y=Pi, fill=HV), lwd=0.25, outlier.size=0.1)+
     scale_fill_manual(values=c('#00BFC4', '#F8766D'))+
@@ -183,11 +217,13 @@ p7 <- ggplot(col_popgen)+
 p7 
 ```
 
-## A: Tajima's D
+![](popgen_plots_files/figure-gfm/Fig5A_2-1.png)<!-- -->
+
+## A: Tajima’s D
 
 Stats:
 
-```{r}
+``` r
 cds <- compare_means(D~HV, col_popgen %>% filter(domain=='CDS'), method='wilcox.test', paired=FALSE)$p
 cc <- compare_means(D~HV, col_popgen %>% filter(domain=='CC'), method='wilcox.test', paired=FALSE)$p
 tir <- compare_means(D~HV, col_popgen %>% filter(domain=='TIR'), method='wilcox.test', paired=FALSE)$p
@@ -196,19 +232,97 @@ lrr <- compare_means(D~HV, col_popgen %>% filter(domain=='LRR'), method='wilcox.
 
 pvalues <- c(cds, cc, tir, nbarc, lrr)
 p.adjust(pvalues, method = 'BH', n = length(pvalues))
+```
 
+    ## [1] 6.940697e-08 1.114327e-02 3.731634e-03 3.983814e-05 8.448988e-05
+
+``` r
 compare_means(D~domain, col_popgen, method='wilcox.test')
-compare_means(D~domain, col_popgen %>% filter(HV=='hv'), method='wilcox.test')
-compare_means(D~domain, col_popgen %>% filter(HV=='non-hv'), method='wilcox.test')
+```
 
+    ## # A tibble: 10 × 8
+    ##    .y.   group1 group2        p  p.adj p.format p.signif method  
+    ##    <chr> <chr>  <chr>     <dbl>  <dbl> <chr>    <chr>    <chr>   
+    ##  1 D     CDS    CC     0.856    1      0.85649  ns       Wilcoxon
+    ##  2 D     CDS    TIR    0.284    1      0.28415  ns       Wilcoxon
+    ##  3 D     CDS    NBARC  0.00392  0.035  0.00392  **       Wilcoxon
+    ##  4 D     CDS    LRR    0.987    1      0.98657  ns       Wilcoxon
+    ##  5 D     CC     TIR    0.259    1      0.25859  ns       Wilcoxon
+    ##  6 D     CC     NBARC  0.0511   0.36   0.05108  ns       Wilcoxon
+    ##  7 D     CC     LRR    0.995    1      0.99521  ns       Wilcoxon
+    ##  8 D     TIR    NBARC  0.000793 0.0079 0.00079  ***      Wilcoxon
+    ##  9 D     TIR    LRR    0.356    1      0.35626  ns       Wilcoxon
+    ## 10 D     NBARC  LRR    0.0108   0.087  0.01083  *        Wilcoxon
+
+``` r
+compare_means(D~domain, col_popgen %>% filter(HV=='hv'), method='wilcox.test')
+```
+
+    ## # A tibble: 10 × 8
+    ##    .y.   group1 group2       p p.adj p.format p.signif method  
+    ##    <chr> <chr>  <chr>    <dbl> <dbl> <chr>    <chr>    <chr>   
+    ##  1 D     CDS    CC     0.0109  0.087 0.0109   *        Wilcoxon
+    ##  2 D     CDS    TIR    0.0948  0.57  0.0948   ns       Wilcoxon
+    ##  3 D     CDS    NBARC  0.129   0.57  0.1292   ns       Wilcoxon
+    ##  4 D     CDS    LRR    0.138   0.57  0.1383   ns       Wilcoxon
+    ##  5 D     CC     TIR    0.972   0.97  0.9722   ns       Wilcoxon
+    ##  6 D     CC     NBARC  0.00508 0.046 0.0051   **       Wilcoxon
+    ##  7 D     CC     LRR    0.0978  0.57  0.0978   ns       Wilcoxon
+    ##  8 D     TIR    NBARC  0.00389 0.039 0.0039   **       Wilcoxon
+    ##  9 D     TIR    LRR    0.336   0.67  0.3359   ns       Wilcoxon
+    ## 10 D     NBARC  LRR    0.0254  0.18  0.0254   *        Wilcoxon
+
+``` r
+compare_means(D~domain, col_popgen %>% filter(HV=='non-hv'), method='wilcox.test')
+```
+
+    ## # A tibble: 10 × 8
+    ##    .y.   group1 group2       p p.adj p.format p.signif method  
+    ##    <chr> <chr>  <chr>    <dbl> <dbl> <chr>    <chr>    <chr>   
+    ##  1 D     CDS    CC     0.537   1     0.5372   ns       Wilcoxon
+    ##  2 D     CDS    TIR    0.705   1     0.7049   ns       Wilcoxon
+    ##  3 D     CDS    NBARC  0.00359 0.036 0.0036   **       Wilcoxon
+    ##  4 D     CDS    LRR    0.908   1     0.9081   ns       Wilcoxon
+    ##  5 D     CC     TIR    0.553   1     0.5527   ns       Wilcoxon
+    ##  6 D     CC     NBARC  0.123   0.86  0.1225   ns       Wilcoxon
+    ##  7 D     CC     LRR    0.617   1     0.6172   ns       Wilcoxon
+    ##  8 D     TIR    NBARC  0.00747 0.067 0.0075   **       Wilcoxon
+    ##  9 D     TIR    LRR    0.674   1     0.6743   ns       Wilcoxon
+    ## 10 D     NBARC  LRR    0.0153  0.12  0.0153   *        Wilcoxon
+
+``` r
 kruskal.test(D ~ domain, data = col_popgen)
+```
+
+    ## 
+    ##  Kruskal-Wallis rank sum test
+    ## 
+    ## data:  D by domain
+    ## Kruskal-Wallis chi-squared = 14.665, df = 4, p-value = 0.005449
+
+``` r
 kruskal.test(D ~ domain, data = col_popgen%>%filter(HV=='hv'))
+```
+
+    ## 
+    ##  Kruskal-Wallis rank sum test
+    ## 
+    ## data:  D by domain
+    ## Kruskal-Wallis chi-squared = 15.548, df = 4, p-value = 0.00369
+
+``` r
 kruskal.test(D ~ domain, data = col_popgen%>%filter(HV=='non-hv'))
 ```
 
+    ## 
+    ##  Kruskal-Wallis rank sum test
+    ## 
+    ## data:  D by domain
+    ## Kruskal-Wallis chi-squared = 11.69, df = 4, p-value = 0.01981
+
 Plot:
 
-```{r Fig5A_1}
+``` r
 p10 <- ggplot(col_popgen,
        aes(x=domain, y=D))+
    geom_boxplot(lwd=0.25, aes(fill=HV), outlier.size = 0.1)+
@@ -230,20 +344,26 @@ p10 <- ggplot(col_popgen,
 p10 
 ```
 
-```{r}
+![](popgen_plots_files/figure-gfm/Fig5A_1-1.png)<!-- -->
+
+``` r
 fig_5a <- p10+p7+plot_layout(ncol=1)
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_5a.svg', plot=fig_5a, dpi=1000, width=75, height=80, units = 'mm')
 ```
 
-## B: Pi vs Tajima's D plot
+## B: Pi vs Tajima’s D plot
 
-```{r Fig5B}
+``` r
 #calculate top 5% threshold for Pi and Tajima's D 
 top_pi <- all_gene %>% pull(Pi) %>% quantile(c(.95), na.rm=TRUE)
 top_D <- all_gene %>% pull(D) %>% quantile(c(.95), na.rm=TRUE)
 all_gene %>% filter(HV != 'all_genes') %>% filter(Pi > top_pi & D > top_D)
+```
 
+    ##       X      Gene     HV log2_TPM meth_percentage te_dist         Pi        D
+    ## 1 25226 AT5G47260 non-hv        0            77.5       0 0.03909852 1.605438
 
+``` r
 p <-ggplot()+
   geom_density2d(all_gene, mapping=aes(x=Pi, y=D, linetype='Genome Distribution'), bins=20, color='grey',  lwd=0.5)+
   geom_segment(x=top_pi, 
@@ -275,8 +395,11 @@ p <-ggplot()+
         text=element_text(size=10))
 
 p
+```
 
+![](popgen_plots_files/figure-gfm/Fig5B-1.png)<!-- -->
 
+``` r
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_5b.svg', plot=p, dpi=1000, width=105,  height=80, units='mm')
 ```
 
@@ -284,7 +407,7 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 
 ## A: PiN and PiS plots
 
-```{r Fig6A}
+``` r
 pi_long <- NLR_popgen %>% subset(select=c('Gene', 'PiS', 'PiN', 'HV')) %>% pivot_longer(
     cols = c(PiS, PiN), 
     names_to = "pi_type",
@@ -297,7 +420,11 @@ pis <- compare_means(value~HV, pi_long %>% filter(pi_type=="{pi[S]}"), method="w
 pin <- compare_means(value~HV, pi_long %>% filter(pi_type=="{pi[N]}"), method="wilcox.test")$p
 
 p.adjust(c(pis, pin), method='BH', 2)
+```
 
+    ## [1] 1.171513e-12 3.288645e-15
+
+``` r
 pi_long$HV <- factor(pi_long$HV, levels=c('non-hv', 'hv'))
 
 p13 <- pi_long %>%
@@ -315,9 +442,11 @@ p13 <- pi_long %>%
 p13
 ```
 
+![](popgen_plots_files/figure-gfm/Fig6A-1.png)<!-- -->
+
 ## B: PiN/PiS plot
 
-```{r Fig6B}
+``` r
 pis=expression(pi['S'])
 pin=expression(pi['N'])
 pis_equals_pin=expression(pi['s']~'='~pi['n'])
@@ -344,21 +473,75 @@ pis_piN <- NLR_popgen %>%
 pis_piN 
 ```
 
+![](popgen_plots_files/figure-gfm/Fig6B-1.png)<!-- -->
+
 Fig 6B Statistics:
 
-```{r}
+``` r
 NLR_popgen %>% group_by(HV) %>% summarize(mean=mean(PiNPiS, na.rm=TRUE), median=median(PiNPiS, na.rm=TRUE))
-compare_means(PiNPiS~HV, col_popgen%>%filter(domain=='CDS'), method='wilcox.test', paired=FALSE)
-lm(PiN ~ PiS, data=NLR_popgen %>% filter(HV=='hv'))
-lm(PiN ~ PiS, data=NLR_popgen %>% filter(HV=='non-hv'))
+```
 
+    ## # A tibble: 2 × 3
+    ##   HV      mean median
+    ##   <chr>  <dbl>  <dbl>
+    ## 1 hv     0.464  0.450
+    ## 2 non-hv 0.583  0.374
+
+``` r
+compare_means(PiNPiS~HV, col_popgen%>%filter(domain=='CDS'), method='wilcox.test', paired=FALSE)
+```
+
+    ## # A tibble: 1 × 8
+    ##   .y.    group1 group2     p p.adj p.format p.signif method  
+    ##   <chr>  <chr>  <chr>  <dbl> <dbl> <chr>    <chr>    <chr>   
+    ## 1 PiNPiS non-hv hv     0.173  0.17 0.17     ns       Wilcoxon
+
+``` r
+lm(PiN ~ PiS, data=NLR_popgen %>% filter(HV=='hv'))
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = PiN ~ PiS, data = NLR_popgen %>% filter(HV == "hv"))
+    ## 
+    ## Coefficients:
+    ## (Intercept)          PiS  
+    ##    0.004356     0.336025
+
+``` r
+lm(PiN ~ PiS, data=NLR_popgen %>% filter(HV=='non-hv'))
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = PiN ~ PiS, data = NLR_popgen %>% filter(HV == "non-hv"))
+    ## 
+    ## Coefficients:
+    ## (Intercept)          PiS  
+    ##    0.001352     0.241057
+
+``` r
 compare_means(PiNPiS~HV, col_popgen %>% filter(domain=='LRR'), method='wilcox.test', paired=FALSE)
+```
+
+    ## # A tibble: 1 × 8
+    ##   .y.    group1 group2     p p.adj p.format p.signif method  
+    ##   <chr>  <chr>  <chr>  <dbl> <dbl> <chr>    <chr>    <chr>   
+    ## 1 PiNPiS non-hv hv     0.684  0.68 0.68     ns       Wilcoxon
+
+``` r
 col_popgen %>% filter(domain=='LRR') %>% group_by(HV) %>% summarize(mean=mean(PiNPiS, na.rm=TRUE), median=median(PiNPiS, na.rm=TRUE))
 ```
 
+    ## # A tibble: 2 × 3
+    ##   HV      mean median
+    ##   <fct>  <dbl>  <dbl>
+    ## 1 non-hv 0.736  0.402
+    ## 2 hv     0.657  0.422
+
 ## C: Mutation plot
 
-```{r Fig6C}
+``` r
 mut_prob_plot <- NLR_popgen %>%
   ggplot(aes(x=HV, y=Mutation.Probability.Score, fill=HV))+
   geom_violin(lwd=0.25)+
@@ -376,21 +559,35 @@ mut_prob_plot <- NLR_popgen %>%
 mut_prob_plot 
 ```
 
+![](popgen_plots_files/figure-gfm/Fig6C-1.png)<!-- -->
+
 Figure 6C statistics:
 
-```{r}
+``` r
 compare_means(Mutation.Probability.Score~HV, NLR_popgen, method="wilcox.test")$p
+```
 
+    ## [1] 2.473658e-05
+
+``` r
 summary <- NLR_popgen %>% group_by(HV) %>% summarize(mean=mean(Mutation.Probability.Score), median=median(Mutation.Probability.Score))
 mean_percent_increase <- (summary[2,2]-summary[1,2])/summary[1,2]*100
 med_percent_increase <- (summary[2,3]-summary[1,3])/summary[1,3]*100
 print(mean_percent_increase[[1]])
+```
+
+    ## [1] -26.34908
+
+``` r
 print(med_percent_increase)
 ```
 
+    ##      median
+    ## 1 -27.64858
+
 ## D: Positive selection sites plot:
 
-```{r Fig6D}
+``` r
 facet_sites_internal <- sites_internal_long %>%
   ggplot(aes(x=HV, y=value*100, fill=HV))+
    geom_beeswarm(size=0.5, aes(color=HV))+
@@ -407,16 +604,18 @@ facet_sites_internal <- sites_internal_long %>%
 facet_sites_internal
 ```
 
+![](popgen_plots_files/figure-gfm/Fig6D-1.png)<!-- -->
+
 6D statistics:
 
-```{r}
+``` r
 p_pervasive <- compare_means(value~HV, sites_internal_long %>% filter(model=='Pervasive'), method='wilcox.test', paired=FALSE)$p
 p_episodic <- compare_means(value~HV, sites_internal_long %>% filter(model=='Episodic'), method='wilcox.test', paired=FALSE)$p
 ```
 
 Finally save
 
-```{r}
+``` r
 fig6 <- p13+pis_piN+mut_prob_plot+facet_sites_internal
 
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_6.svg', plot=fig6, dpi=1000, width=180,  height=120, units='mm')
@@ -424,7 +623,7 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 
 # EV Figure 5C
 
-```{r}
+``` r
 cds <- compare_means(PiNPiS~HV, col_popgen %>% filter(domain=='CDS'), method='wilcox.test', paired=FALSE)$p
 cc <- compare_means(PiNPiS~HV, col_popgen %>% filter(domain=='CC'), method='wilcox.test', paired=FALSE)$p
 tir <- compare_means(PiNPiS~HV, col_popgen %>% filter(domain=='TIR'), method='wilcox.test', paired=FALSE)$p
@@ -435,7 +634,9 @@ pvalues <- c(cds, cc, tir, nbarc, lrr)
 p.adjust(pvalues, method = 'BH', n = length(pvalues))
 ```
 
-```{r EVFig5C}
+    ## [1] 0.4638078 0.4734848 0.4734848 0.4638078 0.6842724
+
+``` r
 PiNPiS_domain <- ggplot(col_popgen,
        aes(x=domain, y=PiNPiS))+
    geom_boxplot(lwd=0.25, aes(fill=HV), outlier.size = 0.1)+
@@ -452,16 +653,21 @@ PiNPiS_domain <- ggplot(col_popgen,
     theme(legend.position='none', text=element_text(size=10), axis.title.x = element_blank())
 
 PiNPiS_domain
+```
 
+![](popgen_plots_files/figure-gfm/EVFig5C-1.png)<!-- -->
+
+``` r
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\EV_fig5C.svg', plot=PiNPiS_domain, dpi=1000, width=70, height=70, units='mm')
 ```
 
 # Figure 7:
 
-Create sliding window plots with domain annotation for RSG2 cluster 1. define functions to get annotation start and stop 2. calculate gene length 3. plot Pi and D across CDS
+Create sliding window plots with domain annotation for RSG2 cluster 1.
+define functions to get annotation start and stop 2. calculate gene
+length 3. plot Pi and D across CDS
 
-```{r}
-
+``` r
 #step 1: get AA coordinates of each domain from col_popgen, convert to nucleotide coordinates of coding sequence (multiply by 3)
 annotation_creator <- function(gene_name){
   coords <- col_popgen %>% 
@@ -550,7 +756,7 @@ tripartite_plot <- function(gene_name){
 }
 ```
 
-```{r}
+``` r
 #save source data 
 aa_annotation_rsg2 <- rbind(annotation_creator('AT5G43730'), annotation_creator('AT5G43740'))
 sliding_window_RSG2 <- col_slider %>% subset(select=c(Gene, gene_length, HV, Pi, D, nuc_midpoint)) %>%
@@ -564,13 +770,22 @@ write.csv(sliding_window_RSG2,
 
 Plot!
 
-```{r Fig7BC}
+``` r
 AT5G43730 <- tripartite_plot('AT5G43730')
 AT5G43740 <- tripartite_plot('AT5G43740')
 
 AT5G43730
-AT5G43740
+```
 
+![](popgen_plots_files/figure-gfm/Fig7BC-1.png)<!-- -->
+
+``` r
+AT5G43740
+```
+
+![](popgen_plots_files/figure-gfm/Fig7BC-2.png)<!-- -->
+
+``` r
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_7B.svg', plot=AT5G43730, dpi=1000, width=120, height=80, unit='mm')
 
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_7C.svg', plot=AT5G43740, dpi='retina', width=120, height=80, unit='mm')
