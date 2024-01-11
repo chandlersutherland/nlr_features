@@ -1,23 +1,35 @@
----
-title: "tissue_specific_expr"
-author: "Chandler Sutherland"
-date: "2023-11-28"
-output: github_document
----
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+tissue_specific_expr
+================
+Chandler Sutherland
+2023-11-28
+
+Copyright (c) Chandler Sutherland Email:
+<chandlersutherland@berkeley.edu>
+
+Purpose: compare hv and non-hvNLR expression and methylation across
+multiple tissue samples
+
+Intermediate processing steps are shown here, with all input files
+available for download from Zenodo. Figures can be recreated using just
+the numerical source data provided in `Source Data/Figure 4` and
+`/EV Figure 3`.
+
+``` r
+library(tidyverse)
 ```
 
+    ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+    ## ✔ dplyr     1.1.3     ✔ readr     2.1.4
+    ## ✔ forcats   1.0.0     ✔ stringr   1.5.0
+    ## ✔ ggplot2   3.4.3     ✔ tibble    3.2.1
+    ## ✔ lubridate 1.9.2     ✔ tidyr     1.3.0
+    ## ✔ purrr     1.0.2     
+    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+    ## ✖ dplyr::filter() masks stats::filter()
+    ## ✖ dplyr::lag()    masks stats::lag()
+    ## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
 
-Copyright (c) Chandler Sutherland
-Email: chandlersutherland@berkeley.edu
-
-Purpose: compare hv and non-hvNLR expression and methylation across multiple tissue samples 
-
-Intermediate processing steps are shown here, with all input files available for download from Zenodo. Figures can be recreated using just the numerical source data provided in `Source Data/Figure 4` and `/EV Figure 3`.
-
-```{r }
-library(tidyverse)
+``` r
 library(ggplot2)
 library(openxlsx)
 library(ggsignif)
@@ -31,9 +43,13 @@ library(pheatmap)
 library(viridis)
 ```
 
-## Expression 
-Explore tissue specific expression using TPM data from Mergner 2020. 
-```{r}
+    ## Loading required package: viridisLite
+
+## Expression
+
+Explore tissue specific expression using TPM data from Mergner 2020.
+
+``` r
 #Download and shape data 
 #Change to your path to the zenodo download to repeat 
 zenodo_path <- "C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//Zenodo V2//"
@@ -41,7 +57,19 @@ all_gene <- read.csv(paste(zenodo_path, 'all_gene_table.csv')) %>% subset(select
 
 #load TPM table from Mergner 2020
 TPM_table <- read_csv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//RNAseq.TPM.csv")
+```
 
+    ## New names:
+    ## Rows: 27563 Columns: 64
+    ## ── Column specification
+    ## ──────────────────────────────────────────────────────── Delimiter: "," chr
+    ## (4): AGI, Chrom, strand, gene dbl (60): ...1, AP-1, AP-2, AP-3, AP-4, AP-7,
+    ## AP-8, AP-9, AP-10, AP-11, AP-1...
+    ## ℹ Use `spec()` to retrieve the full column specification for this data. ℹ
+    ## Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## • `` -> `...1`
+
+``` r
 everything <- merge(all_gene, TPM_table, by.x='Gene', by.y='gene')
 
 #fitler and shape column names
@@ -56,10 +84,47 @@ rel_long <- rel_long %>%
 rel_long <- rel_long %>% dplyr::rename('sample'='tissue') 
 ```
 
-```{r}
+``` r
 #convert sample IDs to tissue IDs 
 sample_id <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//E-MTAB-7978.sdrf.txt") %>% subset(select=c('Scan Name', 'Characteristics[developmental stage]', 'Characteristics[organism part]', 'Characteristics[sampling site]', 'Description'))
+```
 
+    ## New names:
+    ## Rows: 112 Columns: 56
+    ## ── Column specification
+    ## ──────────────────────────────────────────────────────── Delimiter: "\t" chr
+    ## (54): Source Name, Comment[ENA_SAMPLE], Comment[BioSD_SAMPLE], Character... dbl
+    ## (2): Comment[NOMINAL_LENGTH], Comment[NOMINAL_SDEV]
+    ## ℹ Use `spec()` to retrieve the full column specification for this data. ℹ
+    ## Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## • `Protocol REF` -> `Protocol REF...16`
+    ## • `Performer` -> `Performer...17`
+    ## • `Protocol REF` -> `Protocol REF...18`
+    ## • `Performer` -> `Performer...19`
+    ## • `Protocol REF` -> `Protocol REF...20`
+    ## • `Performer` -> `Performer...21`
+    ## • `Protocol REF` -> `Protocol REF...22`
+    ## • `Performer` -> `Performer...23`
+    ## • `Protocol REF` -> `Protocol REF...33`
+    ## • `Performer` -> `Performer...34`
+    ## • `Protocol REF` -> `Protocol REF...42`
+    ## • `Derived Array Data File` -> `Derived Array Data File...43`
+    ## • `Comment [Derived ArrayExpress FTP file]` -> `Comment [Derived ArrayExpress
+    ##   FTP file]...44`
+    ## • `Protocol REF` -> `Protocol REF...45`
+    ## • `Derived Array Data File` -> `Derived Array Data File...46`
+    ## • `Comment [Derived ArrayExpress FTP file]` -> `Comment [Derived ArrayExpress
+    ##   FTP file]...47`
+    ## • `Protocol REF` -> `Protocol REF...48`
+    ## • `Derived Array Data File` -> `Derived Array Data File...49`
+    ## • `Comment [Derived ArrayExpress FTP file]` -> `Comment [Derived ArrayExpress
+    ##   FTP file]...50`
+    ## • `Protocol REF` -> `Protocol REF...51`
+    ## • `Derived Array Data File` -> `Derived Array Data File...52`
+    ## • `Comment [Derived ArrayExpress FTP file]` -> `Comment [Derived ArrayExpress
+    ##   FTP file]...53`
+
+``` r
 conversion <- sample_id %>% 
   mutate(sample = str_remove(`Scan Name`, '_R1.fastq.gz')) %>% 
   mutate(sample = str_remove(sample, '_R2.fastq.gz')) %>%
@@ -72,8 +137,9 @@ rel_long <- merge(rel_long, conversion, by='sample')
 write.csv(rel_long, paste(zenodo_path, 'all_gene_multi_tissue_tpm.csv'))
 ```
 
-Filter to NLRs and repeat pairwise comparison between tissues 
-```{r}
+Filter to NLRs and repeat pairwise comparison between tissues
+
+``` r
 #NLR only 
 hv_rel <- rel_long %>% filter(HV != 'all_genes') %>%
   filter(tissue != 'callus, plant callus, not applicable' & 
@@ -92,8 +158,10 @@ expr_order <- median_expr %>% pull(tissue)
 hv_rel$tissue <- factor(hv_rel$tissue, levels=expr_order)
 ```
 
-Now, rename tissues to be a little clearer and shorter for plotting, and define subgroups  
-```{r renaming}
+Now, rename tissues to be a little clearer and shorter for plotting, and
+define subgroups
+
+``` r
 #extensive renaming of tissue 
 hv_rel <- hv_rel %>% 
   mutate(clean_tissue=case_match(tissue, 
@@ -309,10 +377,9 @@ hv_rel <- hv_rel %>%
                       'silique stage 3, silique, not applicable' ~ 3, 
                       'silique stage 4, silique, not applicable' ~ 4, 
                       'silique stage 5, silique, not applicable' ~ 5))
-
 ```
 
-```{r}
+``` r
 #write/read source code 
 write.csv(hv_rel, file="./Source Data/Figure 4/4A/NLR_multi_tissue_expr.csv")
 write.csv(hv_rel, file="./Source Data/EV Figure 3/NLR_multi_tissue_expr.csv")
@@ -321,16 +388,18 @@ write.csv(hv_rel, file="./Source Data/EV Figure 3/NLR_multi_tissue_expr.csv")
 #hv_rel <- read.csv("./Source Data/Figure 4/4A/NLR_multi_tissue_expr.csv")
 ```
 
-```{r}
+``` r
 #order by development order 
 order <- merge(sig_table, hv_rel, by='tissue') %>% arrange(dev_order)
 order$clean_tissue <- factor(order$clean_tissue, levels=c(order %>% pull(clean_tissue) %>% unique()))
 ```
 
-### Split Violin Plots 
+### Split Violin Plots
 
-Write a function to create an annotation dataframe, with stars, x and y values 
-```{r}
+Write a function to create an annotation dataframe, with stars, x and y
+values
+
+``` r
 #build vegetative annotation df 
 vegetative <- order %>% filter(tissue_group_1=='vegetative')
 vegetative$tissue_group_2 <- factor(vegetative$tissue_group_2, levels=c('shoot', 'root'))
@@ -361,11 +430,14 @@ for (tissue in tissue_groups){
     }
   i=+1
 }
-
 ```
 
-Plot for vegetative tissue 
-```{r EV_Fig3a}
+    ## [1] "shoot"
+    ## [1] "root"
+
+Plot for vegetative tissue
+
+``` r
 y_label <- expression('log'[2]*'(TPM)')
 
 vegetative_plot <- ggplot(vegetative) +
@@ -394,11 +466,17 @@ vegetative_plot <- ggplot(vegetative) +
   theme(text = element_text(family = "sans")) 
 
 vegetative_plot 
+```
 
+![](multi_tissue_files/figure-gfm/EV_Fig3a-1.png)<!-- -->
+
+``` r
 ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\EV_fig3a.svg', vegetative_plot, dpi=1000, height=77, width=180, units='mm')
 ```
-And repeat for reproductive tissue 
-```{r}
+
+And repeat for reproductive tissue
+
+``` r
 #build reproductive annotation df  
 reproductive <- order %>% filter(tissue_group_1=='reproductive')%>% 
   arrange(tissue_group_2, dev_order)
@@ -436,13 +514,22 @@ for (tissue in tissue_groups){
     }
   i=+1
 }
+```
+
+    ## [1] "flower"
+    ## [1] "silique"
+    ## [1] "fruit"
+    ## [1] "embryo"
+    ## [1] "seed"
+
+``` r
 annotation_df$tissue_group_2 <- factor(annotation_df$tissue_group_2, levels=c('flower',  'silique', 'fruit', 'embryo','seed'))
 order$clean_tissue <- factor(order$clean_tissue, levels=c(order %>% pull(clean_tissue) %>% unique()))
 
 names <- reproductive %>% subset(select=c(tissue, clean_tissue)) %>% distinct()
 ```
 
-```{r EV_Fig3B}
+``` r
 repro_plot <- ggplot(reproductive) +
   introdataviz::geom_split_violin(aes(x = tissue, y = log2_TPM_tissue, fill = HV), #split violin
                                   alpha=0.4, trim = TRUE, scale="width",
@@ -470,15 +557,32 @@ repro_plot <- ggplot(reproductive) +
         labels=names[[2]])
 
 repro_plot 
+```
 
+![](multi_tissue_files/figure-gfm/EV_Fig3B-1.png)<!-- -->
+
+``` r
 ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\EV_fig3b.svg', repro_plot, height=70, width=180, units='mm', dpi=1000)
 ```
-### Heatmap 
-Create the heatmap
-First, create annotation dataframes
-```{r}
-names <- read_csv(paste(zenodo_path, "Atha_NLR_common_names.csv", sep="")) 
 
+### Heatmap
+
+Create the heatmap First, create annotation dataframes
+
+``` r
+names <- read_csv(paste(zenodo_path, "Atha_NLR_common_names.csv", sep="")) 
+```
+
+    ## New names:
+    ## Rows: 132 Columns: 3
+    ## ── Column specification
+    ## ──────────────────────────────────────────────────────── Delimiter: "," chr
+    ## (2): Gene, name dbl (1): ...1
+    ## ℹ Use `spec()` to retrieve the full column specification for this data. ℹ
+    ## Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## • `` -> `...1`
+
+``` r
 #create matrices for hv and non-hvNLR expression, and all NLRs 
 nlr_expr_mat <- hv_rel %>% 
   subset(select=c('Gene', 'log2_TPM_tissue', 'tissue')) %>%   
@@ -547,8 +651,7 @@ hv_order <- hv_expr_mat %>% relocate(hclust_obj$labels)
 nhv_order <- nhv_expr_mat %>% relocate(hclust_obj$labels)
 ```
 
-
-```{r}
+``` r
 #set the breaks in the phylogeny 
 mat_breaks <- seq(min(nlr_expr_mat, na.rm=TRUE), max(nlr_expr_mat, na.rm=TRUE), length.out = 100)
 
@@ -595,54 +698,212 @@ pheatmap(nhv_order,
         annotation_names_col=F,
       filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\Fig4A_2.pdf'
      )
-
-```
-## Methylation 
-
-Make a multi-tissue methylation table, plot. Begin with data import from Williams 2022 somatic methylation, processed as described for other methylation tissues.
-```{r, warning=FALSE, echo=FALSE}
-#Import data and combine 
-
-#step 1: get file paths 
-data_files <- Sys.glob("//wsl.localhost//Ubuntu//home//chandlersutherland//e14_counts//bismark_tissues_results//*.tsv", dirmark = FALSE)
-
-#step 2: write a function to read in 
-importer <- function(file_path){
-  df <- file_path %>% read_tsv(skip=2, col_names=c('Chrom', 'Gene', 'mean_meth_percentage', 'count'))
-  #some inelegant string manipulation to extract info from file name 
-  g <- file_path %>% strsplit('//')
-  interest <- g[[1]][8] %>% strsplit('_')
-  meth_type <- interest[[1]][1]
-  sra <- interest[[1]][5] %>% str_remove('.tsv')
-  df_desired <- df %>% mutate(meth_context = meth_type) %>% mutate(sra = sra)
-  return(df_desired)
-}
-
-#step 3: apply 
-#output: df with a column for methylation type (CpG, CHH, CHG), column for SRA_ID, column for gene, column for meth percentage, column for count 
-dfs <- lapply(data_files, importer)
-meth_by_tissue <- do.call(rbind, dfs)
-
-#step 4: match tissue type to SRA, average between biological replicates 
-metadata <- read_csv('C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//SraRunTable (11).txt') %>% subset(select=c('Run', 'source_name'))
-
-#add hv/non-hv info 
-all_gene_sub <- all_gene %>% subset(select=c('Gene', 'HV'))
-
-meth_ready <- merge(meth_by_tissue, metadata, by.x='sra', by.y='Run') %>% 
-  filter(count > 0) %>%
-  group_by(Chrom, Gene, meth_context, source_name) %>% 
-  summarize(mean_meth_percentage=mean(mean_meth_percentage, na.rm=F)) %>% merge(all_gene_sub, by='Gene')
-
-CG <- meth_ready %>% filter(meth_context=='CpG') %>% filter(HV != 'all_genes')
-
-#done, save file to source data and Zenodo  
-write.csv(CG, file="./Source Data/Figure 4/4B/NLR_multi_tissue_meth.csv")
-write.csv(meth_ready, paste(zenodo_path, 'all_gene_multi_tissue_methylation.csv'))
 ```
 
-Perform and plot the pairwise comparison 
-```{r Fig4B}
+## Methylation
+
+Make a multi-tissue methylation table, plot. Begin with data import from
+Williams 2022 somatic methylation, processed as described for other
+methylation tissues.
+
+    ## Rows: 30762 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 30957 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 30889 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 30752 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 30716 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 30700 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 30808 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 30988 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 31067 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 31227 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 31178 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 31074 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 31044 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 31025 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 31104 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 27138 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 27912 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 28869 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 28394 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 27960 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 27719 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 27751 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 27796 Columns: 4
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: "\t"
+    ## chr (2): Chrom, Gene
+    ## dbl (2): mean_meth_percentage, count
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## Rows: 8 Columns: 29
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr  (23): Run, Assay Type, BioProject, BioSample, Center Name, Consent, DAT...
+    ## dbl   (4): AvgSpotLen, Bases, Bytes, version
+    ## dttm  (2): ReleaseDate, create_date
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+    ## `summarise()` has grouped output by 'Chrom', 'Gene', 'meth_context'. You can override using the `.groups` argument.
+
+Perform and plot the pairwise comparison
+
+``` r
 #compare hv and non-hv CpG Methylation 
 CG <- CG %>% mutate(source_name=case_match(source_name, 
                                      'Cauline leaf' ~ 'cauline leaf', 
@@ -687,8 +948,10 @@ methylation_plot <- ggplot(CG) +
         text = element_text(family = "sans")) 
 
 methylation_plot
-
-ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig4b.svg', methylation_plot, height=55, width=100, units='mm', dpi=1000)
 ```
 
+![](multi_tissue_files/figure-gfm/Fig4B-1.png)<!-- -->
 
+``` r
+ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig4b.svg', methylation_plot, height=55, width=100, units='mm', dpi=1000)
+```
