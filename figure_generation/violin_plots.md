@@ -40,7 +40,7 @@ library(patchwork)
 zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
 
 #input data 
-table <- readxl::read_xlsx(path=paste(zenodo_path, "all_gene_table.xlsx", sep=''))
+table <- read.csv(paste(zenodo_path, 'all_gene_table.csv'))
 
 NLR_table <- table %>% filter(HV != 'all_genes')
 NLR_table$HV <- factor(NLR_table$HV , levels=c("non-hv", "hv"))
@@ -127,7 +127,7 @@ compare_means(meth_percentage~HV, NLR_table, method = 'wilcox.test', paired = FA
     ## # A tibble: 1 × 8
     ##   .y.             group1 group2        p   p.adj p.format p.signif method  
     ##   <chr>           <chr>  <chr>     <dbl>   <dbl> <chr>    <chr>    <chr>   
-    ## 1 meth_percentage non-hv hv     0.000428 0.00043 0.00043  ***      Wilcoxon
+    ## 1 meth_percentage non-hv hv     0.000119 0.00012 0.00012  ***      Wilcoxon
 
 Fig 2C: Distance to nearest TE
 

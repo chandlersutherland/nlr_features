@@ -30,7 +30,7 @@ library(patchwork)
 zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
 
 #input data 
-table <- readxl::read_xlsx(path=paste(zenodo_path, "all_gene_table.xlsx", sep=''))
+table <- read.csv(paste(zenodo_path, 'all_gene_table.csv'))
 
 NLR_table <- table %>% filter(HV != 'all_genes')
 NLR_table$HV <- factor(NLR_table$HV , levels=c("non-hv", "hv"))
