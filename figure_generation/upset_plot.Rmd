@@ -70,11 +70,9 @@ write.csv(alt, file="./Source Data/Figure 3/3A/NLR_feature_by_strata.csv")
 #alt <- read.csv("./Source Data/Figure 3/3A/NLR_feature_by_strata.csv")
 ```
 
-## Expression stratification
+Statistics for within hv and within non-hv differences across strata
 
-Apply Benjamini-Hochberg correction across strata to account for multiple testing
-
-```{r expr_strat}
+```{r}
 #pivot for easier stratification 
 pivot_alt <- alt %>% 
   pivot_longer(cols=c('clustered', 'domain'), values_to='subgroup') 
@@ -82,7 +80,32 @@ pivot_alt <- alt %>%
 pivot_alt$HV <- factor(pivot_alt$HV, levels=c('non-hv', 'hv'))
 y_label <- expression('log'[2]*'(TPM)')
 
+#are the distributions between hv and non-hv different across strata? 
+kruskal.test(log2_TPM~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
+kruskal.test(log2_TPM~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
 
+kruskal.test(meth_percentage~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
+kruskal.test(meth_percentage~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
+
+kruskal.test(te_dist~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
+kruskal.test(te_dist~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
+
+nhv_res <- round(p.adjust(c(0.8705, 0.04255, 0.5573), method='BH'), digits=2)
+hv_res <- round(p.adjust(c(0.345, 0.6333, 0.619), method='BH'), digits=2)
+
+print('non-hv subset p values:')
+print(nhv_res)
+
+print('hv subset p values:')
+print(hv_res)
+```
+
+Nope, subseting the hv and non-hv groups does not change distribution across strata.
+
+## Expression stratification
+
+Apply Benjamini-Hochberg correction across strata to account for multiple testing
+```{r}
 #build annotation df 
 group_n <- pivot_alt %>% pull(subgroup) %>% unique() %>% length()
 pivot_alt$subgroup <- factor(pivot_alt$subgroup, levels=c('singleton', 'clustered', 'CNL', 'TNL'))
@@ -99,10 +122,16 @@ p_val <- pivot_alt %>% compare_means(log2_TPM~HV, ., group.by='subgroup', paired
 p_val 
 
 pivot_alt %>% filter(!is.na(log2_TPM)) %>% group_by(HV, subgroup) %>% summarize(n=n())
+```
 
-expr_p <- pivot_alt %>% arrange(subgroup, HV) %>%
+
+```{r expr_strat}
+base_expr <- pivot_alt %>% arrange(subgroup, HV) %>%
   ggplot()+
-  introdataviz::geom_split_violin(aes(x=subgroup, y=log2_TPM, fill=HV), alpha=0.4, trim = T, scale="width", 
+  introdataviz::geom_split_violin(aes(x=subgroup, 
+                                      y=log2_TPM, 
+                                      fill=HV), 
+                                  alpha=0.4, trim = T, scale="width", 
                                   lwd=0.30)+
   stat_summary(mapping=aes(x=subgroup, y=log2_TPM, fill=HV), fun = median, geom = "point", show.legend = F, shape=21, color='black',
                position = position_dodge(.225), size=1) +
@@ -111,27 +140,49 @@ expr_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   theme_classic(base_size = 10)+
   ylab(y_label)+
   xlab('')+
-  ylim(0, 9.5)+
+  ylim(0, 13)+
   scale_x_discrete(breaks=c("singleton","clustered", "CNL", "TNL"),
         labels=c("singletons\nn=34,12", "clustered\nn=57,19", "CNLs\nn=30,12", "TNLs\nn=61,19"))+
   theme(legend.position='none', 
         text = element_text(size=10, family='sans'), 
-        axis.text.y=element_text(size=10))+
+        axis.text.y=element_text(size=10))
+
+tick_length <- 0.6 
+expr_p <- base_expr + 
   geom_text(data=p_val, 
             mapping=aes(x=x, y=y, label=stars),
-            size = 10/.pt,
-            show.legend=FALSE)
+            size = 9/.pt,
+            show.legend=FALSE)+
+  geom_segment( #horizontal line pairwise
+    data=p_val, 
+    mapping=aes(x=x-.2, y=y-.4, xend=x+.2, yend=y-.4), lwd=0.3
+  )+
+  geom_segment( #left tick pairwise 
+    data=p_val, 
+    mapping=aes(x=x-.2, xend=x-.2, y=y-.4, yend=y-.4-tick_length), lwd=0.3
+  )+
+  geom_segment( #right tick pairwise 
+    data=p_val, 
+    mapping=aes(x=x+.2, xend=x+.2, y=y-.4, yend=y-.4-tick_length), lwd=0.3
+  )+
+  geom_segment(x=0.8, xend=3.8, y=10.5, yend=10.5, lwd=0.3) +#horizontal line Kruskal wallis non-hvNLR
+  geom_segment(data=p_val, mapping=aes(x=x-0.2, y=10.5, xend=x-0.2, yend=10.5-tick_length), lwd=0.3)+
+  geom_text(x=1, y=11.5, label='ns', size = 9/.pt)+
+  geom_segment(x=1.2, xend=4.2, y=12, yend=12, lwd=0.3) +#horizontal line Kruskal wallis non-hvNLR
+  geom_segment(data=p_val, mapping=aes(x=x+0.2, y=12, xend=x+0.2, yend=12-tick_length), lwd=0.3)+
+  geom_text(x=4, y=13, label='ns', size = 9/.pt)
+  
 ```
 
 ## Methylation Stratification
 
-```{r meth_strat}
+```{r}
 p_val <- pivot_alt %>% 
   compare_means(meth_percentage~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
   arrange(subgroup, p.adj) %>% 
   unique() %>%
   mutate(x=seq(from=1, to=group_n)) %>% 
-  mutate(y=90) %>% 
+  mutate(y=85) %>% 
   mutate(stars=case_when(p.adj < .001 ~'***', 
                          p.adj >= .001 & p.adj < .01 ~ '**', 
                          p.adj >= .01 & p.adj < .05 ~ '*', 
@@ -141,8 +192,11 @@ p_val
 
 #print sample sizes
 pivot_alt %>% filter(!is.na(meth_percentage)) %>% group_by(HV, subgroup) %>% summarize(n=n())
+```
 
-meth_p <- pivot_alt %>% arrange(subgroup, HV) %>%
+
+```{r meth_strat}
+base_meth <- pivot_alt %>% arrange(subgroup, HV) %>%
   ggplot()+
   introdataviz::geom_split_violin(aes(x=subgroup, y=meth_percentage, fill=HV), alpha=0.4, trim = TRUE, scale="width", 
                                   lwd=0.30)+
@@ -152,36 +206,64 @@ meth_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   scale_color_manual(values=c('#00BFC4',  '#F8766D'))+
   theme_classic(base_size = 10)+
   ylab('%CG Methylation')+
-  ylim(0,100)+
+  #ylim(0,120)+
   xlab('')+
   scale_x_discrete(breaks=c("singleton","clustered", "CNL", "TNL"),
         labels=c("singletons\nn=33,12", "clustered\nn=57,19", "CNLs\nn=29,12", "TNLs\nn=61,19"))+
+  scale_y_continuous(breaks=c(0, 25,50, 75, 100))+
   theme(legend.position='none', 
         text = element_text(size=10, family='sans'), 
-        axis.text.y=element_text(size=10))+
+        axis.text.y=element_text(size=10))
+
+y_scale <- 0.83
+tick_length_m <- 0.6*120/13
+meth_p <- base_meth + 
   geom_text(data=p_val, 
             mapping=aes(x=x, y=y, label=stars),
-            size = 10/.pt,
-            show.legend=FALSE)
+            size = 9/.pt,
+            show.legend=FALSE)+
+  geom_segment( #horizontal line pairwise
+    data=p_val, 
+    mapping=aes(x=x-.2, y=80, xend=x+.2, yend=80), lwd=0.3
+  )+
+  geom_segment( #left tick pairwise 
+    data=p_val, 
+    mapping=aes(x=x-.2, xend=x-.2, y=80, yend=80-tick_length_m), lwd=0.3
+  )+
+  geom_segment( #right tick pairwise 
+    data=p_val, 
+    mapping=aes(x=x+.2, xend=x+.2, y=80, yend=80-tick_length_m), lwd=0.3
+  )+
+  geom_segment(x=0.8, xend=3.8, y=90, yend=90, lwd=0.3) +#horizontal line Kruskal wallis non-hvNLR
+  geom_segment(data=p_val, mapping=aes(x=x-0.2, y=90, xend=x-0.2, yend=90-tick_length_m), lwd=0.3)+
+  geom_text(x=1, y=95, label='ns', size = 9/.pt)+
+  geom_segment(x=1.2, xend=4.2, y=100, yend=100, lwd=0.3) +#horizontal line Kruskal wallis hvNLR
+  geom_segment(data=p_val, mapping=aes(x=x+0.2, y=100, xend=x+0.2, yend=100-tick_length_m), lwd=0.3)+
+  geom_text(x=4, y=105, label='ns', size = 9/.pt)
 ```
 
 ## TE distance stratification
 
-```{r te_strat}
+```{r}
 p_val <- pivot_alt %>% compare_means(te_dist~HV, ., group.by='subgroup', paired=F, method='wilcox.test', p.adjust.method = 'BH') %>%
   arrange(subgroup, p.adj) %>% 
   unique() %>%
   mutate(x=seq(from=1, to=group_n)) %>% 
-  mutate(y=34) %>% 
+  mutate(y=36) %>% 
   mutate(stars=case_when(p.adj < .001 ~'***', 
                          p.adj >= .001 & p.adj < .01 ~ '**', 
                          p.adj >= .01 & p.adj < .05 ~ '*', 
                          p.adj > .05 ~ 'ns'
                          ))
 
-p_val 
+p_val
 
-te_p <- pivot_alt %>% arrange(subgroup, HV) %>%
+pivot_alt %>% group_by(HV, subgroup) %>% summarize(n=n())
+```
+
+
+```{r te_strat}
+base_te <- pivot_alt %>% arrange(subgroup, HV) %>%
   ggplot()+
   introdataviz::geom_split_violin(aes(x=subgroup, y=te_dist, fill=HV), alpha=0.4, trim = TRUE, scale="width", 
                                   lwd=0.30)+
@@ -192,44 +274,50 @@ te_p <- pivot_alt %>% arrange(subgroup, HV) %>%
   theme_classic(base_size = 10)+
   ylab('TE Distance')+
   xlab('')+
-  ylim(0, 38)+
+  ylim(0, 50)+
   theme(legend.position='none', 
         text = element_text(size=10, family='sans'), 
         axis.text.y=element_text(size=10))+
-  geom_text(data=p_val, 
-            mapping=aes(x=x, y=y, label=stars),
-            size = 10/.pt,
-            show.legend=FALSE)+
   scale_x_discrete(breaks=c("singleton","clustered", "CNL", "TNL"),
         labels=c("singletons\nn=34,13", "clustered\nn=57,22", "CNLs\nn=30,16", "TNLs\nn=61,19"))
 
 
-pivot_alt %>% group_by(HV, subgroup) %>% summarize(n=n())
+
+
+y_scale <- 0.33
+tick_te <- 0.6*50/13
+te_p <- base_te + 
+  geom_text(data=p_val, 
+            mapping=aes(x=x, y=y, label=stars),
+            size = 9/.pt,
+            show.legend=FALSE)+
+  geom_segment( #horizontal line pairwise
+    data=p_val, 
+    mapping=aes(x=x-.2, y=y-2, xend=x+.2, yend=y-2), lwd=0.3
+  )+
+  geom_segment( #left tick pairwise 
+    data=p_val, 
+    mapping=aes(x=x-.2, xend=x-.2, y=y-2, yend=y-2-tick_te), lwd=0.3
+  )+
+  geom_segment( #right tick pairwise 
+    data=p_val, 
+    mapping=aes(x=x+.2, xend=x+.2, y=y-2, yend=y-2-tick_te), lwd=0.3
+  )+
+  geom_segment(x=0.8, xend=3.8, y=40, yend=40, lwd=0.3) + #horizontal line Kruskal wallis non-hvNLR
+  geom_segment(data=p_val, mapping=aes(x=x-0.2, y=40, xend=x-0.2, yend=40-tick_te), lwd=0.3)+
+  geom_text(x=1, y=42, label='ns', size = 9/.pt)+
+  geom_segment(x=1.2, xend=4.2, y=45, yend=45, lwd=0.3)+ #horizontal line Kruskal wallis hvNLR
+  geom_segment(data=p_val, mapping=aes(x=x+0.2, y=45, xend=x+0.2, yend=45-tick_te), lwd=0.3)+
+  geom_text(x=4, y=47, label='ns', size = 9/.pt)
 ```
 
 # Figure 3A: split violin plots by strata
 
 ```{r split_upset}
-split_upset <- expr_p+meth_p+te_p + plot_layout(guides='collect', ncol=1)
+split_upset <- expr_p+meth_p+te_p + plot_layout(guides='collect', ncol=1) & theme(plot.margin= margin(t=0.25, b=0, l=0.1, r=0.1, 'cm'))
 split_upset
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_3a.svg', plot=split_upset, dpi=1000, width=80, height=110, units = 'mm')
+
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_3a.svg', plot=split_upset, dpi=1000, width=75, height=120, units = 'mm')
 ```
 
-Statistics for within hv and within non-hv differences across strata
 
-```{r}
-#are the distributions between hv and non-hv different across strata? 
-kruskal.test(log2_TPM~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
-kruskal.test(log2_TPM~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
-
-kruskal.test(meth_percentage~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
-kruskal.test(meth_percentage~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
-
-kruskal.test(te_dist~subgroup, data=(pivot_alt %>% filter(HV=='non-hv')))
-kruskal.test(te_dist~subgroup, data=(pivot_alt %>% filter(HV=='hv')))
-
-p.adjust(c(0.8705, 0.04255, 0.5573), method='BH')
-p.adjust(c(0.345, 0.6333, 0.619), method='BH')
-```
-
-Nope, subseting the hv and non-hv groups does not change distribution across strata.
