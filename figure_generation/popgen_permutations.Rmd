@@ -1,0 +1,204 @@
+---
+title: "popgen_permutations"
+author: "Chandler Sutherland"
+date: "2024-01-11"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Author: Chandler Sutherland 
+Copyright (c) Chandler Sutherland
+Email: chandlersutherland@berkeley.edu
+
+Goal: Use permutation tests to determine number of NLRs expected by chance in tails of empirical distribution. 
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(tidyverse)
+library(ggsignif)
+library(ggpubr)
+library(patchwork)
+```
+
+load data 
+```{r}
+#Change to your path to the zenodo download to repeat 
+zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
+#load in all gene data 
+table <- read.csv(paste(zenodo_path, 'all_gene_table.csv'))
+```
+
+# D and Pi 
+We are interested in the probability of observing NLRs, hvNLRs, or non-hvNLRs in the top 5% of an empirical distribution 
+```{r}
+#function that takes in table, column name as a string, and n replicates, and outputs probability of observing NLRs, hvNLRs, and non-hvNLRs in the top 5% of the distribution by chance 
+on_top <- function(table, col_name, n){
+  
+  q <- quantile(table %>% pull(col_name), c(.05, .95), na.rm=TRUE)
+  print(paste('calculating probability of ', col_name, '. The 95th percentile is: ', q[2]))
+  
+  observed_nlr <- table[table['HV'] != 'all_genes' & table[col_name]>q[2],] %>% nrow()
+  
+  permutation_nlr = replicate(n, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV != 'all_genes',]) , replace = FALSE), ] # sample the size of all NLRs
+  sample_small[sample_small[col_name]>q[2],] %>% nrow()  # get expected above 95% 
+  })
+  
+  print(paste('observed NLRs in top 5%:', observed_nlr))
+  print(paste('expected NLRs in top 5% by chance:', mean(permutation_nlr)))
+  print(paste('p value non-hv in top 5%:', mean(observed_nlr < permutation_nlr)))
+  
+  observed_hv <- table[table['HV'] == 'hv' & table[col_name]>q[2],] %>% nrow()
+  permutation_hv = replicate(n, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'hv',]) , replace = FALSE), ] 
+  sample_small[sample_small[col_name]>q[2],] %>% nrow()  # get expected above 95% 
+  })
+  
+  print(paste('observed hvNLRs in top 5%:', observed_hv))
+  print(paste('expected hvNLRs in top 5% by chance:', mean(permutation_hv)))
+  print(paste('p value hv in top 5%:', mean(observed_hv < permutation_hv)))
+  
+  observed_nhv <- table[table['HV'] == 'non-hv' & table[col_name]>q[2],] %>% nrow()
+  
+  permutation_nhv = replicate(n, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'non-hv',]) , replace = FALSE), ] # sample the size of non-hvNLRs
+  sample_small[sample_small[col_name]>q[2],] %>% nrow()  # get expected above 95% 
+  })
+  
+  print(paste('observed hvNLRs in top 5%:', observed_nhv))
+  print(paste('expected hvNLRs in top 5% by chance:', mean(permutation_nhv)))
+  print(paste('p value hv in top 5%:', mean(observed_hv < permutation_nhv)))
+  
+}
+
+on_top(table, 'Pi', 10000)
+on_top(table, 'D', 10000)
+
+```
+```{r}
+on_bottom <- function(table, x, n){
+  
+  q <- quantile(table %>% pull(x), c(.05, .95), na.rm=TRUE)
+  print(paste('calculating probability of ', x, '. The 5th percentile is: ', q[1]))
+  
+  observed_nlr <- table[table['HV'] != 'all_genes' & table[x]<q[1],] %>% nrow()
+  
+  permutation_nlr = replicate(n, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV != 'all_genes',]) , replace = FALSE), ] # sample the size of all NLRs
+  sample_small[sample_small[x]<q[1],] %>% nrow()  # get below 5% 
+  })
+  
+  print(paste('observed NLRs in bottom 5%:', observed_nlr))
+  print(paste('expected NLRs in bottom 5% by chance:', mean(permutation_nlr)))
+  print(paste('p value non-hv in bottom 5%:', mean(observed_nlr < permutation_nlr)))
+  
+  observed_hv <- table[table['HV'] == 'hv' & table[x]<q[1],] %>% nrow()
+  
+  permutation_hv = replicate(n, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'hv',]) , replace = FALSE), ] # sample the size of hvNLRs
+  sample_small[sample_small[x]<q[1],] %>% nrow()  # get expected above 95% 
+  })
+  
+  print(paste('observed hvNLRs in bottom 5%:', observed_hv))
+  print(paste('expected hvNLRs in bottom 5% by chance:', mean(permutation_hv)))
+  print(paste('p value hv in bottom 5%:', mean(observed_hv < permutation_hv)))
+  
+  observed_nhv <- table[table['HV'] == 'non-hv' & table[x]<q[1],] %>% nrow()
+  
+  permutation_nhv = replicate(n, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'non-hv',]) , replace = FALSE), ] # sample the size of non-hvNLRs
+  sample_small[sample_small[x]<q[1],] %>% nrow()  # get expected above 95% 
+  })
+  
+  print(paste('observed hvNLRs in bottom 5%:', observed_nhv))
+  print(paste('expected hvNLRs in bottom 5% by chance:', mean(permutation_nhv)))
+  print(paste('p value hv in bottom 5%:', mean(observed_hv < permutation_nhv)))
+  
+}
+
+on_bottom(table, 'Pi', 1000)
+on_bottom(table, 'D', 1000)
+```
+
+Supplemental figure 3, which shows the distribution of D and Pi with the percentiles
+```{r EVfig3}
+d_distro <- ggplot(data=table)+geom_histogram(aes(x=D))+
+   geom_segment(x=1.50913785453558, xend=1.50913785453558, yend=0, y=20000, aes(color='5th and 95th percentiles'))+
+  geom_segment(x=-1.7870429615165, xend=-1.7870429615165, yend=0, y=20000, aes(color='5th and 95th percentiles'))+
+  geom_segment(data= table %>% filter(HV=='hv'), aes(
+      x= D,
+  		y = 0,
+  		xend = D,
+  		yend = -250, color='hvNLR'), alpha = 0.75, linewidth=0.5) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+geom_segment(data= table %>% filter(HV=='non-hv'), aes(
+      x= D,
+  		y = -250,
+  		xend = D,
+  		yend = -500, color='non-hvNLR'), alpha = 0.75, linewidth=0.5) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+  theme_classic() +
+  theme(legend.position='right', text=element_text(size=10), legend.title=element_blank())+
+ # labs(title='Empirical Distribution of D values')+
+  xlab("Tajima's D")+
+  ylab('count')+
+  scale_color_manual(values=c('red', '#F8766D', '#00BFC4'))
+
+pi_distro <- ggplot(data=table)+geom_histogram(aes(x=Pi), bins=50)+
+  geom_segment(x=0.000316624887148824, xend=0.000316624887148824, yend=0, y=20000, aes(color='5th and 95th percentiles'))+
+  geom_segment(x=0.0140259207477425, xend=0.0140259207477425, yend=0, y=20000, aes(color='5th and 95th percentiles'))+
+  geom_segment(data= table %>% filter(HV=='hv'), aes(
+      x= Pi,
+  		y = 0,
+  		xend = Pi,
+  		yend = -500, color='hvNLR'), alpha = 0.75, linewidth=0.5) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+geom_segment(data= table %>% filter(HV=='non-hv'), aes(
+      x= Pi,
+  		y = -500,
+  		xend = Pi,
+  		yend = -1000, color='non-hvNLR'), alpha = 0.75, linewidth=0.5) +
+  	labs(colour = c('hvNLR', 'nonhvNLR')) +
+  theme_classic() +
+  xlim(0, 0.10)+
+  theme(legend.position='right', text=element_text(size=10), legend.title=element_blank())+
+  #labs(title='Empirical Distribution of Pi Values')+
+  xlab(expression(pi))+
+  ylab('count')+
+  scale_color_manual(values=c('red', '#F8766D', '#00BFC4'))
+
+both <- d_distro+pi_distro+plot_layout(guides = 'collect')
+both
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\EV_fig4a.png', plot=both, dpi=1000, width=180, height=70, unit='mm')
+
+```
+
+```{r}
+#write source data 
+write.csv(table %>% subset(select=c('Gene', 'HV', 'Pi', 'D')), file="./Source Data/EV Figure 4/EV 4AB/pi_d_genome.csv")
+```
+
+
+Repeat for the density of both distributions 
+```{r}
+#double double toil and trouble, two distros! 
+q_D <- quantile(table$D, c(.05, .95), na.rm = TRUE)
+q_Pi <- quantile(table$Pi, c(.05, .95), na.rm=TRUE)
+
+observed_nlr <- table %>% filter(HV != 'all_genes') %>% filter(D > q_D[2]) %>% filter(Pi > q_Pi[2]) %>% nrow()
+
+permutation_nlr = replicate(10000, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV != 'all_genes',]) , replace = FALSE), ] # sample the size of non-hvNLRs
+  #sample_large <- meth[! rownames(meth) %in% rownames(sample_small), ] # sample the rest
+  sample_small%>% filter(D > q_D[2]) %>% filter(Pi > q_Pi[2]) %>% nrow()  # get expected above 95%
+})
+
+print(paste('observed NLRs in top 5% of both distros:', observed_nlr))
+print(paste('expected NLRs in top 5% of both distros by chance:', mean(permutation_nlr)))
+print(paste('p value NLRs in top of both distros:', mean(observed_nlr < permutation_nlr)))
+```
+
