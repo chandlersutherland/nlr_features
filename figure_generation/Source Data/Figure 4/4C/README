@@ -1,0 +1,7 @@
+# Figure 4B
+The file NLR_multi_tissue_meth.csv contains the following columns: 
+- Gene: gene name 
+- Chrom: chromosome
+- meth_context: categorical variable, either CpG, CHG, or CHH, describing the context of methylation 
+- source_name: tissue of origin 
+- mean_meth_percentage: average methylation percentage of biological replicates

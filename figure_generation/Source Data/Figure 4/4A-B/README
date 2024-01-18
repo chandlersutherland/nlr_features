@@ -1,0 +1,10 @@
+# Figure 4A/EV Figure 3
+log2(TPM+1) expression data of NLRs across 52 tissue types used to create Fig 4A and EV Fig 3
+- sample: simple name of sample from Mergner 2020
+- tissue: long form of sample from Mergner 2020
+- HV: 'hv' or 'non-hv'
+- TPM: per sample calculated TPM 
+- log2_TPM_tissue: log2(TPM+1) transformation of TPM 
+- clean_tissue: slightly modified tissue name for plotting 
+- tissue_group_1: categorical variable describing tissue as reproductive or vegetative 
+- tissue_group_2: categorical variable creating subgroups within reproductive and vegetative 
