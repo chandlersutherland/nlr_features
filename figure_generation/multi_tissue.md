@@ -11,8 +11,7 @@ multiple tissue samples
 
 Intermediate processing steps are shown here, with all input files
 available for download from Zenodo. Figures can be recreated using just
-the numerical source data provided in `Source Data/Figure 4` and
-`/EV Figure 3`.
+the numerical source data provided in `Source Data/Figure 4`.
 
 ``` r
 library(tidyverse)
@@ -37,8 +36,6 @@ library(ggpubr)
 library(patchwork)
 library(ggbeeswarm)
 library(introdataviz)
-#library(singscore)
-#library(GSEABase)
 library(pheatmap)
 library(viridis)
 ```
@@ -381,8 +378,7 @@ hv_rel <- hv_rel %>%
 
 ``` r
 #write/read source code 
-write.csv(hv_rel, file="./Source Data/Figure 4/4A/NLR_multi_tissue_expr.csv")
-write.csv(hv_rel, file="./Source Data/EV Figure 3/NLR_multi_tissue_expr.csv")
+write.csv(hv_rel, file="./Source Data/Figure 4/4A-B/NLR_multi_tissue_expr.csv")
 
 #To reproduce these plots, un-comment the following lines and start code from there  
 #hv_rel <- read.csv("./Source Data/Figure 4/4A/NLR_multi_tissue_expr.csv")
@@ -394,7 +390,7 @@ order <- merge(sig_table, hv_rel, by='tissue') %>% arrange(dev_order)
 order$clean_tissue <- factor(order$clean_tissue, levels=c(order %>% pull(clean_tissue) %>% unique()))
 ```
 
-### Split Violin Plots
+### Fig 4A: Split Violin Plots
 
 Write a function to create an annotation dataframe, with stars, x and y
 values
@@ -468,7 +464,7 @@ vegetative_plot <- ggplot(vegetative) +
 vegetative_plot 
 ```
 
-![](multi_tissue_files/figure-gfm/EV_Fig3a-1.png)<!-- -->
+![](multi_tissue_files/figure-gfm/Fig4a-1.png)<!-- -->
 
 ``` r
 ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\EV_fig3a.svg', vegetative_plot, dpi=1000, height=77, width=180, units='mm')
@@ -559,13 +555,13 @@ repro_plot <- ggplot(reproductive) +
 repro_plot 
 ```
 
-![](multi_tissue_files/figure-gfm/EV_Fig3B-1.png)<!-- -->
+![](multi_tissue_files/figure-gfm/Fig4A_2-1.png)<!-- -->
 
 ``` r
 ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\EV_fig3b.svg', repro_plot, height=70, width=180, units='mm', dpi=1000)
 ```
 
-### Heatmap
+### Fig 4B: Heatmap
 
 Create the heatmap First, create annotation dataframes
 
@@ -611,13 +607,9 @@ annotation_df <- order %>%
 
 #column annotation: p value color, tissue group color 
 col_annotation <- annotation_df  %>%
-  subset(select=c('tissue', 'tissue_group_1', 'tissue_group_2', 'p.adj')) %>%
-    mutate(stars_wilcox=case_when(p.adj < .001 ~'***', 
-                         p.adj >= .001 & p.adj < .01 ~ '**', 
-                         p.adj >= .01 & p.adj < .05 ~ '*', 
-                         p.adj > .05 ~ 'ns'
-                         )) %>% 
-  subset(select=c('tissue',  'stars_wilcox','tissue_group_2'))%>%
+  subset(select=c('tissue', 'tissue_group_1', 'tissue_group_2', 'p.adj'))  %>%
+  subset(select=c('tissue',  
+                  'tissue_group_2'))%>%
   distinct() %>%
   column_to_rownames('tissue')
 
@@ -626,11 +618,10 @@ my_col = list(
   tissue_group_2=c('shoot'="#4DAF4A",
                    'root'="#A65628",
                    'flower'="#984EA3",
-                   'embryo'="#F781BF",
-                   'silique'="#FF7F00",
+                   'embryo'="#FF456F",
+                   'silique'="#FD7116",
                    'fruit'="#FFFF33",
                    'seed'="#377EB8"), 
- stars_wilcox=c('***'='red', '**'='orange', '*'='yellow','ns'='grey'),
   HV=c('hv'='#F8766D', 
        'non-hv'='#00BFC4'))
 
@@ -667,14 +658,15 @@ pheatmap(hv_order,
          cluster_cols=hclust_obj, 
         treeheight_row=15, 
         treeheight_col=15,
-         cellheight = 2, 
-         cellwidth=3, 
+         cellheight = 1.5, 
+         cellwidth=2, 
          border_color=NA,
          cutree_cols=2, 
          fontsize=8, 
+        legend=F,
         annotation_names_row=F,
         annotation_names_col=F,
-         filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\Fig4A_1.pdf'
+         filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\Fig4B_1.pdf'
         )
 
 pheatmap(nhv_order, 
@@ -690,13 +682,14 @@ pheatmap(nhv_order,
          cluster_cols=hclust_obj, 
         treeheight_row=15, 
         treeheight_col=0,
-        cellheight = 2, 
-         cellwidth=3, 
+        cellheight = 1.5, 
+      legend=F,
+         cellwidth=2, 
       border_color=NA,
     fontsize = 8,
     annotation_names_row=F,
         annotation_names_col=F,
-      filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\Fig4A_2.pdf'
+      filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\Fig4B_2.pdf'
      )
 ```
 
@@ -899,7 +892,9 @@ methylation tissues.
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-    ## `summarise()` has grouped output by 'Chrom', 'Gene', 'meth_context'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'Chrom', 'Gene', 'meth_context', 'source_name'. You can override using the `.groups` argument.
+
+## Figure 4C: split violin
 
 Perform and plot the pairwise comparison
 
@@ -918,7 +913,7 @@ p_val <- compare_means(mean_meth_percentage~HV, CG,  method='wilcox.test', paire
 group_n <- nrow(p_val)
 annot_df <- p_val %>% 
   mutate(x=seq(from=1, to=group_n)) %>%
-  mutate(y=95) %>% 
+  mutate(y=105) %>% 
   mutate(stars=case_when(p.adj < .001 ~'***', 
                          p.adj >= .001 & p.adj < .01 ~ '**', 
                          p.adj >= .01 & p.adj < .05 ~ '*', 
@@ -935,7 +930,7 @@ methylation_plot <- ggplot(CG) +
                position = position_dodge(.2), size=1) +
   scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
   scale_color_manual(values=c('#00BFC4',  '#F8766D'))+
-  scale_y_continuous(limits = c(0,100), expand = c(0, 0)) +
+  scale_y_continuous(limits = c(0,120), expand = c(0, 0), breaks=c(0, 25, 50, 75, 100)) +
   theme_classic(base_size = 10)+
   ylab('%CG Methylation')+
   xlab('') +
@@ -944,8 +939,9 @@ methylation_plot <- ggplot(CG) +
             size=10/ .pt,
             show.legend=FALSE)+
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.title=element_blank(), 
-        text = element_text(family = "sans")) 
+        legend.position='none',
+        text = element_text(family = "sans"), 
+        plot.margin=margin(b=0)) 
 
 methylation_plot
 ```
@@ -953,5 +949,5 @@ methylation_plot
 ![](multi_tissue_files/figure-gfm/Fig4B-1.png)<!-- -->
 
 ``` r
-ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig4b.svg', methylation_plot, height=55, width=100, units='mm', dpi=1000)
+ggsave('C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig4b.svg', methylation_plot, height=60, width=65, units='mm', dpi=1000)
 ```
