@@ -9,10 +9,10 @@ Purpose: generate hv and non-hvNLR enrichment plots of expression,
 methylation, and TE distance.
 
 Intermediate processing steps are shown here, but figures can be
-recreated using just the numerical source data provided in Source
-`Data/Figure 2/2D-F`. Significance for these figures determined using
-singscore and various permutation tests in the `permutations.Rmd`
-script.
+recreated using just the numerical source data provided in
+`Source Data/Figure 2/2D-F`. Significance for these figures determined
+using singscore and various permutation tests in the `permutations.Rmd`
+and `permutations.R` scripts.
 
 Code used to create plots was adapted from singscore visualization of
 ranked density reported in Foroutan M, Bhuva D, Lyu R, Horan K, Cursons
@@ -46,7 +46,7 @@ library(patchwork)
 #Change to your path to the zenodo download to repeat 
 zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
 #load in all gene data 
-table <- readxl::read_xlsx(path=paste(zenodo_path, "all_gene_table.xlsx", sep=''))
+table <- read.csv(paste(zenodo_path, 'all_gene_table.csv'))
 ```
 
 Write a function that takes in a column name, then outputs a ranked list
@@ -121,7 +121,8 @@ geom_segment(data= exp_rank %>% filter(set=='non-hv'), aes(
          y='Density') +
   theme_classic()+
   theme(legend.position='none', text=element_text(size=10), axis.title.x=element_blank()) +
-  annotate("text", x = 0.825, y = 2.1, label = "**", color='#F8766D', size=3) #Greatest sample p value for singscore enrichment is 0.002
+  annotate("text", x = 0.825, y = 2.1, label = "**", color='#F8766D', size=3) + #Greatest sample p value for singscore enrichment is 0.002
+  annotate("text", x = 0.27, y = 1.7, label = "ns", color='#00BFC4', size=3)
 ```
 
     ## Scale for colour is already present.
@@ -131,8 +132,9 @@ geom_segment(data= exp_rank %>% filter(set=='non-hv'), aes(
 exp_enrich_p
 ```
 
-![](enrichment_plots_files/figure-gfm/Fig2D-1.png)<!-- --> \## Fig 2E:
-Methylation enrichment plot
+![](enrichment_plots_files/figure-gfm/Fig2D-1.png)<!-- -->
+
+## Fig 2E: Methylation enrichment plot
 
 ``` r
 #create density lines 
@@ -161,7 +163,8 @@ geom_segment(data= meth_rank %>% filter(set=='non-hv'), aes(
   theme_classic()+
   theme(legend.position='none', text=element_text(size=10), 
         axis.title=element_blank())+
-  annotate("text", x = 0.22, y = 1.6, label = "*", color='#F8766D', size=3) #greatest p value for hvNLR methylation weighted by GC content is .02, hvnlr is .55 (see permutations.Rmd for calculation)
+  annotate("text", x = 0.3, y = 1.9, label = "*", color='#F8766D', size=3)+ # (see permutations.Rmd for calculation)
+  annotate("text", x = 0.6, y = 1.6, label = "ns", color='#00BFC4', size=3)
 ```
 
     ## Scale for colour is already present.
@@ -200,7 +203,8 @@ geom_segment(data= te_rank %>% filter(set=='non-hv'), aes(
     labs(colour = c('hvNLR', 'nonhvNLR')) +
   theme_classic() +
   theme(legend.position='none', text=element_text(size=10), axis.title=element_blank())+
-  annotate("text", x = 0.07, y = 2.37, label = "***", color='#F8766D', size=3) #p value is 0 for hv, see permutations.Rmd
+  annotate("text", x = 0.07, y = 2.37, label = "***", color='#F8766D', size=3)+ #p value is 0 for hv, see permutations.Rmd
+  annotate("text", x = 0.5, y = 1.25, label = "ns", color='#00BFC4', size=3)
 ```
 
     ## Scale for colour is already present.
