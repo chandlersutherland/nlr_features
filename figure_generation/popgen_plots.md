@@ -51,7 +51,7 @@ write.csv(popgen_per_domain, paste(zenodo_path, 'popgen_per_domain.csv', sep="")
 write.csv(popgen_per_domain %>% subset(select=c('Gene', 'name', 'HV', 'domain', 'D', 'Pi', 'PiN', 'PiS', 'PiNPiS')), 
           'Source Data//Figure 5//popgen_per_domain.csv')
 write.csv(popgen_per_domain %>% subset(select=c('Gene', 'name', 'HV', 'domain', 'D', 'Pi', 'PiN', 'PiS', 'PiNPiS')), 
-          'Source Data//EV Figure 4//EV 4C//popgen_per_domain.csv')
+          'Source Data//EV Figure 3//EV 3C//popgen_per_domain.csv')
 ```
 
 For gene wide statistics, use just the CDS. Already in the
@@ -68,7 +68,7 @@ NLR_popgen <- read.csv(paste(zenodo_path, 'NLR_gene_table.csv')) %>%
 
 labels <- NLR_popgen$label %>% unique()
 NLR_popgen$label <- factor(NLR_popgen$label, levels=c(labels[1], labels[2]))
-
+NLR_popgen$HV <- factor(NLR_popgen$HV, levels=c('non-hv', 'hv'))
 write.csv(NLR_popgen, 'Source Data//Figure 6//6ABC//NLR_popgen.csv')
 ```
 
@@ -211,7 +211,7 @@ p7 <- ggplot(col_popgen)+
                       xend=c(1.25, 2.25, 3.25, 4.25, 5.25),
                       y = c(0.175, 0.175, 0.175, 0.175, 0.175),
                       annotation2 = c('***',  ' *** ', '  ***  ', '   ***    ', '    ***    ')), 
-              aes(x=x, xend=xend, y=y, yend=y, annotation=annotation2, textsize=2.5))+
+              aes(x=x, xend=xend, y=y, yend=y, annotation=annotation2, textsize=8/.pt))+
     theme(legend.position='none', text=element_text(size=10), axis.title.x = element_blank())
   
 p7 
@@ -337,7 +337,7 @@ p10 <- ggplot(col_popgen,
                       xend=c(1.25, 2.25, 3.25, 4.25, 5.25),
                       y = c(4.1, 4.1, 4.1, 4.1, 4.1),
                       annotation2 = c('***', '*', '**', ' *** ', '  ***  ')), 
-              aes(x=x, xend=xend, y=y, yend=y, annotation=annotation2, textsize=2.5))+
+              aes(x=x, xend=xend, y=y, yend=y, annotation=annotation2, textsize=8/.pt))+
     theme(legend.position='none', text=element_text(size=10), axis.title.x = element_blank())
 
   
@@ -432,7 +432,7 @@ p13 <- pi_long %>%
   geom_violin(lwd=0.25)+
     geom_quasirandom(alpha=0.3, size=0.5)+
    geom_signif(comparisons=list(c('hv', 'non-hv')), 
-               map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(0.08))+
+               map_signif_level = TRUE, test=wilcox.test, textsize=8/.pt, y=c(0.075))+
   ylim(0,0.085)+
     scale_fill_manual(values=c('#00BFC4', '#F8766D'))+
   theme_classic()+
@@ -483,9 +483,9 @@ NLR_popgen %>% group_by(HV) %>% summarize(mean=mean(PiNPiS, na.rm=TRUE), median=
 
     ## # A tibble: 2 × 3
     ##   HV      mean median
-    ##   <chr>  <dbl>  <dbl>
-    ## 1 hv     0.464  0.450
-    ## 2 non-hv 0.583  0.374
+    ##   <fct>  <dbl>  <dbl>
+    ## 1 non-hv 0.583  0.374
+    ## 2 hv     0.464  0.450
 
 ``` r
 compare_means(PiNPiS~HV, col_popgen%>%filter(domain=='CDS'), method='wilcox.test', paired=FALSE)
@@ -542,6 +542,7 @@ col_popgen %>% filter(domain=='LRR') %>% group_by(HV) %>% summarize(mean=mean(Pi
 ## C: Mutation plot
 
 ``` r
+NLR_popgen$HV <- factor(NLR_popgen$HV, levels=c('non-hv', 'hv'))
 mut_prob_plot <- NLR_popgen %>%
   ggplot(aes(x=HV, y=Mutation.Probability.Score, fill=HV))+
   geom_violin(lwd=0.25)+
@@ -549,7 +550,7 @@ mut_prob_plot <- NLR_popgen %>%
   scale_fill_manual(values=c('#00BFC4', '#F8766D'))+
   theme_classic()+
   geom_signif(comparisons=list(c('non-hv', 'hv')), 
-               map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25)+
+               map_signif_level = TRUE, test=wilcox.test, textsize=8/.pt)+
   theme(legend.position='none', text=element_text(size=10))+
   ylim(0,1.2e-4)+
   scale_y_continuous(labels = scales::scientific)+
@@ -564,6 +565,12 @@ mut_prob_plot
 Figure 6C statistics:
 
 ``` r
+print('p value wilcoxon rank sum:')
+```
+
+    ## [1] "p value wilcoxon rank sum:"
+
+``` r
 compare_means(Mutation.Probability.Score~HV, NLR_popgen, method="wilcox.test")$p
 ```
 
@@ -573,26 +580,37 @@ compare_means(Mutation.Probability.Score~HV, NLR_popgen, method="wilcox.test")$p
 summary <- NLR_popgen %>% group_by(HV) %>% summarize(mean=mean(Mutation.Probability.Score), median=median(Mutation.Probability.Score))
 mean_percent_increase <- (summary[2,2]-summary[1,2])/summary[1,2]*100
 med_percent_increase <- (summary[2,3]-summary[1,3])/summary[1,3]*100
+print("mean percent increase:")
+```
+
+    ## [1] "mean percent increase:"
+
+``` r
 print(mean_percent_increase[[1]])
 ```
 
-    ## [1] -26.34908
+    ## [1] 35.77562
 
 ``` r
-print(med_percent_increase)
+print('median percent increase:')
 ```
 
-    ##      median
-    ## 1 -27.64858
+    ## [1] "median percent increase:"
+
+``` r
+print(med_percent_increase[[1]])
+```
+
+    ## [1] 38.21429
 
 ## D: Positive selection sites plot:
 
 ``` r
 facet_sites_internal <- sites_internal_long %>%
   ggplot(aes(x=HV, y=value*100, fill=HV))+
-   geom_beeswarm(size=0.5, aes(color=HV))+
+   geom_beeswarm(size=0.4, aes(color=HV))+
    geom_signif(comparisons=list(c('hv', 'non-hv')), 
-               map_signif_level = TRUE, test=wilcox.test, textsize=2, size=0.25, y=c(16))+
+               map_signif_level = TRUE, test=wilcox.test, textsize=8/.pt, y=c(15.5))+
     scale_color_manual(values=c('#00BFC4','#F8766D'))+
   theme_classic()+
   theme(legend.position='none', text=element_text(size=10))+
@@ -621,7 +639,7 @@ fig6 <- p13+pis_piN+mut_prob_plot+facet_sites_internal
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\fig_6.svg', plot=fig6, dpi=1000, width=180,  height=120, units='mm')
 ```
 
-# EV Figure 5C
+# EV Figure 3C
 
 ``` r
 cds <- compare_means(PiNPiS~HV, col_popgen %>% filter(domain=='CDS'), method='wilcox.test', paired=FALSE)$p
@@ -655,7 +673,7 @@ PiNPiS_domain <- ggplot(col_popgen,
 PiNPiS_domain
 ```
 
-![](popgen_plots_files/figure-gfm/EVFig5C-1.png)<!-- -->
+![](popgen_plots_files/figure-gfm/EVFig3C-1.png)<!-- -->
 
 ``` r
 ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\EV_fig5C.svg', plot=PiNPiS_domain, dpi=1000, width=70, height=70, units='mm')
