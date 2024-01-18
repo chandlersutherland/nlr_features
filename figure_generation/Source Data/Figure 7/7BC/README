@@ -1,0 +1,3 @@
+#Figure 7B and C: annotation, Pi, and D plots 
+aa_annotation_rsg2.csv contains the amino acid coordinates of the three domains of both RSG2 cluster NLRs 
+sliding_window_RSG2.csv contains the results of the sliding window analysis for RSG2. Statistics were calculated on 300bp windows with a step size of 75bp. The nuc_midpoint is the midpoint of that window.  
