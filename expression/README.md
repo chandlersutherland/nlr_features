@@ -1,0 +1,1 @@
+This directory contains the file `expression_pipeline.bash`, which aligns RNAseq reads to a prepared genome and produces counts using htseq-count in parallel. The simualted reads were created using `simulate_expression.r`. 
