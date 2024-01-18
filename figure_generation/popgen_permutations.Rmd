@@ -179,7 +179,7 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 
 ```{r}
 #write source data 
-write.csv(table %>% subset(select=c('Gene', 'HV', 'Pi', 'D')), file="./Source Data/EV Figure 4/EV 4AB/pi_d_genome.csv")
+write.csv(table %>% subset(select=c('Gene', 'HV', 'Pi', 'D')), file="./Source Data/EV Figure 3/EV 3AB/pi_d_genome.csv")
 ```
 
 

@@ -117,13 +117,13 @@ on_top(table, 'Pi', 10000)
 
     ## [1] "calculating probability of  Pi . The 95th percentile is:  0.0140489927540266"
     ## [1] "observed NLRs in top 5%: 63"
-    ## [1] "expected NLRs in top 5% by chance: 9.4957"
+    ## [1] "expected NLRs in top 5% by chance: 9.4444"
     ## [1] "p value non-hv in top 5%: 0"
     ## [1] "observed hvNLRs in top 5%: 35"
-    ## [1] "expected hvNLRs in top 5% by chance: 2.5317"
+    ## [1] "expected hvNLRs in top 5% by chance: 2.5193"
     ## [1] "p value hv in top 5%: 0"
     ## [1] "observed hvNLRs in top 5%: 28"
-    ## [1] "expected hvNLRs in top 5% by chance: 6.9702"
+    ## [1] "expected hvNLRs in top 5% by chance: 6.9743"
     ## [1] "p value hv in top 5%: 0"
 
 ``` r
@@ -132,14 +132,14 @@ on_top(table, 'D', 10000)
 
     ## [1] "calculating probability of  D . The 95th percentile is:  1.50881426721351"
     ## [1] "observed NLRs in top 5%: 1"
-    ## [1] "expected NLRs in top 5% by chance: 12.0928"
-    ## [1] "p value non-hv in top 5%: 1"
+    ## [1] "expected NLRs in top 5% by chance: 12.0985"
+    ## [1] "p value non-hv in top 5%: 0.9999"
     ## [1] "observed hvNLRs in top 5%: 0"
-    ## [1] "expected hvNLRs in top 5% by chance: 3.212"
-    ## [1] "p value hv in top 5%: 0.9666"
+    ## [1] "expected hvNLRs in top 5% by chance: 3.2046"
+    ## [1] "p value hv in top 5%: 0.9628"
     ## [1] "observed hvNLRs in top 5%: 1"
-    ## [1] "expected hvNLRs in top 5% by chance: 8.8942"
-    ## [1] "p value hv in top 5%: 0.9999"
+    ## [1] "expected hvNLRs in top 5% by chance: 8.8973"
+    ## [1] "p value hv in top 5%: 1"
 
 ``` r
 on_bottom <- function(table, x, n){
@@ -187,14 +187,14 @@ on_bottom(table, 'Pi', 1000)
 
     ## [1] "calculating probability of  Pi . The 5th percentile is:  0.000316624887148824"
     ## [1] "observed NLRs in bottom 5%: 0"
-    ## [1] "expected NLRs in bottom 5% by chance: 9.425"
+    ## [1] "expected NLRs in bottom 5% by chance: 9.553"
     ## [1] "p value non-hv in bottom 5%: 1"
     ## [1] "observed hvNLRs in bottom 5%: 0"
-    ## [1] "expected hvNLRs in bottom 5% by chance: 2.46"
-    ## [1] "p value hv in bottom 5%: 0.912"
+    ## [1] "expected hvNLRs in bottom 5% by chance: 2.443"
+    ## [1] "p value hv in bottom 5%: 0.923"
     ## [1] "observed hvNLRs in bottom 5%: 0"
-    ## [1] "expected hvNLRs in bottom 5% by chance: 6.915"
-    ## [1] "p value hv in bottom 5%: 0.999"
+    ## [1] "expected hvNLRs in bottom 5% by chance: 6.912"
+    ## [1] "p value hv in bottom 5%: 1"
 
 ``` r
 on_bottom(table, 'D', 1000)
@@ -202,13 +202,13 @@ on_bottom(table, 'D', 1000)
 
     ## [1] "calculating probability of  D . The 5th percentile is:  -1.78922602865888"
     ## [1] "observed NLRs in bottom 5%: 46"
-    ## [1] "expected NLRs in bottom 5% by chance: 11.964"
+    ## [1] "expected NLRs in bottom 5% by chance: 12.146"
     ## [1] "p value non-hv in bottom 5%: 0"
     ## [1] "observed hvNLRs in bottom 5%: 0"
-    ## [1] "expected hvNLRs in bottom 5% by chance: 3.263"
-    ## [1] "p value hv in bottom 5%: 0.968"
+    ## [1] "expected hvNLRs in bottom 5% by chance: 3.188"
+    ## [1] "p value hv in bottom 5%: 0.954"
     ## [1] "observed hvNLRs in bottom 5%: 46"
-    ## [1] "expected hvNLRs in bottom 5% by chance: 8.821"
+    ## [1] "expected hvNLRs in bottom 5% by chance: 8.927"
     ## [1] "p value hv in bottom 5%: 1"
 
 Supplemental figure 3, which shows the distribution of D and Pi with the
@@ -288,7 +288,7 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 
 ``` r
 #write source data 
-write.csv(table %>% subset(select=c('Gene', 'HV', 'Pi', 'D')), file="./Source Data/EV Figure 4/EV 4AB/pi_d_genome.csv")
+write.csv(table %>% subset(select=c('Gene', 'HV', 'Pi', 'D')), file="./Source Data/EV Figure 3/EV 3AB/pi_d_genome.csv")
 ```
 
 Repeat for the density of both distributions
@@ -315,10 +315,10 @@ print(paste('observed NLRs in top 5% of both distros:', observed_nlr))
 print(paste('expected NLRs in top 5% of both distros by chance:', mean(permutation_nlr)))
 ```
 
-    ## [1] "expected NLRs in top 5% of both distros by chance: 1.6988"
+    ## [1] "expected NLRs in top 5% of both distros by chance: 1.6874"
 
 ``` r
 print(paste('p value NLRs in top of both distros:', mean(observed_nlr < permutation_nlr)))
 ```
 
-    ## [1] "p value NLRs in top of both distros: 0.5048"
+    ## [1] "p value NLRs in top of both distros: 0.5053"
