@@ -1,14 +1,17 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Enrichment Tests"
+output: github_document
 ---
-Author: Chandler Sutherland 
-Copyright (c) Chandler Sutherland
-Email: chandlersutherland@berkeley.edu
 
-Goal: assign significance to the enrichment plots, using the singscore gene set enrichment for expression, and permutation tests for methylation and TE distance. Also, use permutations to determine number of NLRs expected by chance in tails of empirical distribution. 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+```
 
-```{r}
+Author: Chandler Sutherland Copyright (c) Chandler Sutherland Email: [chandlersutherland\@berkeley.edu](mailto:chandlersutherland@berkeley.edu){.email}
+
+Goal: assign significance to the enrichment plots, using the singscore gene set enrichment for expression, and permutation tests for methylation and TE distance.
+
+```{r, message=FALSE}
 library(data.table)
 library(ggplot2)
 library(tidyverse)
@@ -17,17 +20,22 @@ library(ggsignif)
 library(ggpubr)
 library(singscore)
 library(GSEABase)
+library(patchwork)
 ```
 
-Read in the gene table 
+Read in the gene table
 ```{r}
-table <- readxl::read_xlsx(path="C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\all_gene_table.xlsx")
-grey <- read.csv("C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E8//Ath_somatic_mutations_gene_level_data.csv")
-merged <- merge(grey, table  %>% subset(select=c('Gene', 'HV')), by.x='gene', by.y='Gene', all=TRUE) %>% 
-  mutate(HV=recode(HV, `0` = "non-hv", `1`="hv")) %>% rename('Gene'='gene')
+zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
+table <-  read.csv(paste(zenodo_path, 'all_gene_table.csv')) 
+
+#set number of replicates throughout document
+replicates <- 1000 #used 10,000 for p value reported in manuscript (see permutations.R), but reduced to 1000 here for rendering speed 
 ```
+
+# Singscore for Expression Enrichment
 
 An out of the box package exists to test significance of gene sets for expression: singscore. (Fourtran 2018)
+
 ```{r}
 #generate gene sets
 #remove unmappable genes 
@@ -40,8 +48,11 @@ nonhv_names <- NONHV$Gene %>% unique()
 nonhv_geneset <- GeneSet(nonhv_names, geneIdType=SymbolIdentifier())
 ```
 
-This packages does analysis by sample, not on averaged biological replicates. Loading a raw TPM matrix. Then, create the ranked gene object, ranked, and score the hv gene set and the nonhv gene set. From here, generate a null distro and plot our p values 
-```{r}
+This packages does analysis by sample, not on averaged biological replicates. Loading a raw TPM matrix. Then, create the ranked gene object, ranked, and score the hv gene set and the nonhv gene set. From here, generate a null distribution and plot our p values.
+
+hvNLR enrichment:
+
+```{r singscore_distro}
 TPM <- read.table("C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\tpm_matrix.csv", header=TRUE, sep=",", row.names=2) %>% subset(select=c(-X))
 
 ranked <- rankGenes(TPM)
@@ -51,17 +62,27 @@ nonhv_sing <- simpleScore(ranked, nonhv_geneset)
 
 hv_null <- generateNull(rankData=ranked, upSet=hv_geneset)
 hv_p <- getPvals(hv_null, hv_sing)
+print(hv_p)
 plotNull(hv_null, hv_sing, hv_p, sampleNames = names(hv_p)[1:4], textSize=0.5)
 ```
 
-```{r}
+non-hvNLR enrichment:
+
+```{r nhvNLR_distro}
 nonhv_null <- generateNull(rankData=ranked, upSet=nonhv_geneset)
 nonhv_p <- getPvals(nonhv_null, nonhv_sing)
+print(nonhv_p)
 plotNull(nonhv_null, nonhv_sing, nonhv_p, sampleNames = names(nonhv_p)[1:4], textSize=0.5)
 ```
 
-For methylation and TE distance, write a function to calculate a p value for enrichment tests by using a permutation test 
+Therefore, hvNLRs are significantly enriched (largest p value=0.003), non-hvNLRs are not (largest p value=0.790).
+
+# TE distance
+
+For TE distance, write a function to calculate a p value for enrichment tests by using a permutation test
+
 ```{r}
+# write a general permutation test function that can be used across features 
 # first, calculate the observed value
 observe <- function(df, col_index, hv_status){
   observed <- mean(df%>%filter(HV==hv_status)%>% pull(col_index)%>%na.omit()) - 
@@ -71,7 +92,7 @@ observe <- function(df, col_index, hv_status){
 
 permute <- function(df, col_index, hv_status) {
   # build null distribution
-  permutation = replicate(10000, {
+  permutation = replicate(replicates, { 
     df <- df %>% drop_na(col_index)
     sample_small <- df[sample(nrow(df), nrow(df[df$HV == hv_status,]) , replace = FALSE), ] # sample the size of hvNLRs
     sample_large <- df[! rownames(df) %in% rownames(sample_small), ] # sample the rest
@@ -93,86 +114,17 @@ p_calc <- function(df, col_index){
   print(paste(colnames(df)[col_index]))
   print(paste('hv_p: ', pval, ' nonhv_p:', pval2))
 }
+```
 
-p_calc(table, 4)
-p_calc(table, 5)
+TE distance permutation test difference in means:
+
+```{r}
+#apply to TE distance
 p_calc(table, 6)
-p_calc(table, 7)
-p_calc(table, 8)
-p_calc(merged, 35)
-```
-```{r}
-permute_hv <- permute(table, 4, 'hv')
-q=quantile(permute_hv, c(.95, .05))
-observe_hv <- observe(table, 4, 'hv')
-ggplot() + aes(permute_hv)+ geom_histogram(colour="black", fill="white") + geom_vline(xintercept=observe_hv)+
-  geom_vline(aes(xintercept=q[2]), colour="#BB0000", size=1)+
-  geom_vline(aes(xintercept=q[1]), colour="#BB0000", size=1)+
-  #geom_vline(aes(xintercept=observed_nhv), color='blue')+
-  xlab('Permutation difference in means meth hv nlr 1000')
-
-mean(observe_hv > permute_hv)
 ```
 
-```{r}
-table <- table %>% drop_na(D)
-observed_nhv <- mean(table$D[table$HV == 'non-hv' ]) - mean(table$D[table$HV == 'all_genes' ])
+For TE distance, also check the median:
 
-permutation_nhv = replicate(1000, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'non-hv',]) , replace = FALSE), ] # sample the size of non-hvNLRs
-  sample_large <- table[! rownames(table) %in% rownames(sample_small), ] # sample the rest
-  mean(sample_small$D)-mean(sample_large$D) # get expected mean
-})
-q=quantile(permutation_nhv, c(.05, .95))
-#did this by hand, but want to plot p=.05 on the histo 
-
-p <- ggplot() + aes(permutation_nhv)+ geom_histogram(colour="black", fill="white") + geom_vline(xintercept=observed_nhv)+
-  geom_vline(aes(xintercept=q[2]), colour="#BB0000", size=1)+
-  geom_vline(aes(xintercept=q[1]), colour="#BB0000", size=1)+
-  geom_vline(aes(xintercept=observed_nhv), color='blue')+
-  xlab('Permutation D non-hv 1000')
-p
-
-observed_hv <- mean(table$D[table$HV == 'hv' ]) - mean(table$D[table$HV == 'all_genes' ])
-
-permutation_hv = replicate(1000, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'hv',]) , replace = FALSE), ] # sample the size of non-hvNLRs
-  sample_large <- table[! rownames(table) %in% rownames(sample_small), ] # sample the rest
-  mean(sample_small$D)-mean(sample_large$D) # get expected mean
-})
-q=quantile(permutation_hv, c(.05, .95))
-#did this by hand, but want to plot p=.05 on the histo 
-
-p <- ggplot() + aes(permutation_hv)+ geom_histogram(colour="black", fill="white") + geom_vline(xintercept=observed_hv)+
-  geom_vline(aes(xintercept=q[2]), colour="#BB0000", size=1)+
-  geom_vline(aes(xintercept=q[1]), colour="#BB0000", size=1)+
-  #geom_vline(aes(xintercept=observed_nhv), color='blue')+
-  xlab('Permutation D hv 1000')
-p
-
-#check all NLRs vs Pi 
-observed_nlr <- mean(table$Pi_by_lseff[table$HV != 'all_genes' ]) - mean(table$Pi_by_lseff[table$HV == 'all_genes' ], na.rm=TRUE)
-
-permutation_nlr = replicate(1000, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV != 'all_genes',]) , replace = FALSE), ] # sample the size of NLRs
-  sample_large <- table[! rownames(table) %in% rownames(sample_small), ] # sample the rest
-  mean(sample_small$Pi_by_lseff)-mean(sample_large$Pi_by_lseff) # get expected mean
-})
-q=quantile(permutation_nlr, c(.05, .95))
-#did this by hand, but want to plot p=.05 on the histo 
-
-p <- ggplot() + aes(permutation_nlr)+ geom_histogram(colour="black", fill="white") + geom_vline(xintercept=observed_nlr)+
-  geom_vline(aes(xintercept=q[2]), colour="#BB0000", size=1)+
-  geom_vline(aes(xintercept=q[1]), colour="#BB0000", size=1)+
-  #geom_vline(aes(xintercept=observed_nhv), color='blue')+
-  xlab('Permutation Pi NLR 1000')
-p
-
-mean(observed_nlr < permutation_nlr)
-```
-
-
-For TE distance, also check the median: 
 ```{r}
 observe_med <- function(df, col_index, hv_status){
   observed <- median(df%>%filter(HV==hv_status)%>%pull(col_index)%>%na.omit()) - 
@@ -182,7 +134,7 @@ observe_med <- function(df, col_index, hv_status){
 
 permute_med <- function(df, col_index, hv_status) {
   # build null distribution
-  permutation = replicate(10000, {
+  permutation = replicate(replicates, { 
     df <- df %>% drop_na(col_index)
     sample_small <- df[sample(nrow(df), nrow(df[df$HV == hv_status,]) , replace = FALSE), ] # sample the size of hvNLRs
     sample_large <- df[! rownames(df) %in% rownames(sample_small), ] # sample the rest
@@ -203,12 +155,24 @@ p_calc_med <- function(df, col_index){
   print(paste(colnames(df)[col_index], ' median'))
   print(paste('hv_p: ', pval, ' nonhv_p:', pval2))
 }
-
-p_calc_med(table, 5)
 ```
 
+Permutation test difference in medians:
 
-A potential bias for CG methylation is the number of high coverage CGs per gene. This is on a per-sample basis. First, test the per sample significance, then weight based on CGs per gene. 
+```{r}
+p_calc_med(table, 6)
+```
+
+# Methylation
+
+Begin with basic difference in means calculation
+
+```{r}
+p_calc(table, 5)
+```
+
+A potential bias for CG methylation is the number of high coverage CGs per gene. This is on a per-sample basis. First, test the per sample significance, then weight based on CGs per gene.
+
 ```{r}
 #load the per sample methylation files 
 SRR17281085 <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//e14_R//SRR17281085_per_gene_meth_count.xlsx", skip=2, col_names = c('Index', 'Chrom', 'Gene', 'mean_percent_methylation', 'count'))
@@ -224,26 +188,25 @@ clean <- function(df) {
   df2 <- df %>% merge(table, by='Gene', all=TRUE)
   df2$HV <- factor(df2$HV , levels=c("all_genes", "non-hv", "hv"))
   df3 <- df2 %>% subset(select=c('Gene', 'HV', 'mean_percent_methylation', 'count')) %>%
-    filter(!is.na(mean_percent_methylation))
+    filter(!is.na(mean_percent_methylation)) %>% 
+    filter(Gene != 'AT4G16860') %>% #remove outlier hvNLRs with tricontext methylation 
+    filter(Gene != 'AT1G58602')
   df3
 }
 
 clean_samples <- lapply(names(samples), function(x) clean(samples[[x]]))
 names(clean_samples) <- c('SRR17281085', 'SRR17281086', 'SRR17281087', 'SRR17281088')
 ```
-```{r}
-#lapply(names(clean_samples), function(x) p_calc(clean_samples[[x]], 3))
-```
 
-The kernel density estimation computes kernel density estimates. Often shortened to KDE, it’s a technique that let’s you create a smooth curve given a set of data. So here, it's taking in my # of mappable CG sites per HV gene, and returning a density curve. 
+The kernel density estimation computes kernel density estimates. Often shortened to KDE, it's a technique that let's you create a smooth curve given a set of data. So here, it's taking in my \# of mappable CG sites per HV gene, and returning a density curve.
 
 The approxfun function returns a list of points which linearly interpolate given data points. Returns a function performing linear or constant interpolation of the given data points. Linear interpolation is a method of calculating intermediate data between known values by conceptually drawing a straight line between two adjacent known values.
 
-Repeat the CG count weighted permutation test on all four samples: 
+Repeat the CG count weighted permutation test on all four samples:
+
 ```{r}
 #create a sampled gene list weighted by counts 
 density_sample <- function(df, hv_status){
-  #df <- df %>% drop_na()
   split_df <- df %>% filter(HV == hv_status)
   
   #calculate CG count density KDE function 
@@ -256,14 +219,15 @@ density_sample <- function(df, hv_status){
   
   # sample genes, with weights according to their number of CGs, according to above function
   all_genes <- df$Gene
-  sampled_genes <- data.frame(replicate(10000, sample(all_genes, size = nrow(split_df), replace = FALSE, 
-                                                    prob = probabilities)))
+  sampled_genes <- data.frame(replicate(replicates, 
+                                        sample(all_genes, 
+                                               size = nrow(split_df), 
+                                               replace = FALSE, 
+                                               prob = probabilities)))
   
   return(sampled_genes)
   }
 
-test_nhv <- density_sample(clean_samples[[1]], 'non-hv')
-table <- clean_samples[[1]]
 
 #write function that gets the difference in means between the permuted sample and the actual 
 get_mean_difference <- function(gene_list, table) {
@@ -272,14 +236,10 @@ get_mean_difference <- function(gene_list, table) {
   return(actual_mean-permute_mean)
 }
 
-
-get_mean_difference(test_nhv[[1]], clean_samples[[1]])
-mean_diff <- actual_mean-permute_mean
-
 #calculate the pvalue 
 pval <- function(sampled_df, table, hv_status, observed){
   differences <- list()
-  for (x in 1:10000) {
+  for (x in 1:replicates) { 
     x <- get_mean_difference(sampled_df[[x]], table)
     differences <- append(differences, x)
     }
@@ -288,9 +248,9 @@ pval <- function(sampled_df, table, hv_status, observed){
   
   return(p_val)
 }
-
-pval(test_nhv, 'non-hv', observed_nhv)
 ```
+
+hvNLRs each sample:
 
 ```{r}
 hv_sampled_genes <- lapply(names(clean_samples), function(x) density_sample(clean_samples[[x]], 'hv'))
@@ -302,6 +262,8 @@ pval(hv_sampled_genes[[3]], clean_samples[[3]], 'hv', observed_hv[[3]])
 pval(hv_sampled_genes[[4]], clean_samples[[4]], 'hv', observed_hv[[4]])
 ```
 
+non-hvNLRs each sample:
+
 ```{r}
 nhv_sampled_genes <- lapply(names(clean_samples), function(x) density_sample(clean_samples[[x]], 'non-hv'))
 observed_nhv <- lapply(names(clean_samples), function(x) observe(clean_samples[[x]], 3, 'non-hv'))
@@ -311,167 +273,3 @@ pval(nhv_sampled_genes[[2]], clean_samples[[2]], 'non-hv', observed_nhv[[2]])
 pval(nhv_sampled_genes[[3]], clean_samples[[3]], 'non-hv', observed_nhv[[3]])
 pval(nhv_sampled_genes[[4]], clean_samples[[4]], 'non-hv', observed_nhv[[4]])
 ```
-
-```{r}
-#function that takes in table, column name as a string, and n replicates, and outputs probability of observing NLRs, hvNLRs, and non-hvNLRs in the top 5% of the distribution by chance 
-on_top <- function(table, x, n){
-  
-  q <- quantile(table %>% pull(x), c(.05, .95), na.rm=TRUE)
-  print(paste('calculating probability of ', x, '. The 95th percentile is: ', q[2]))
-  
-  observed_nlr <- table[table['HV'] != 'all_genes' & table[x]>q[2],] %>% nrow()
-  
-  permutation_nlr = replicate(n, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV != 'all_genes',]) , replace = FALSE), ] # sample the size of all NLRs
-  sample_small[sample_small[x]>q[2],] %>% nrow()  # get expected above 95% 
-  })
-  
-  print(paste('observed NLRs in top 5%:', observed_nlr))
-  print(paste('expected NLRs in top 5% by chance:', mean(permutation_nlr)))
-  print(paste('p value non-hv in top 5%:', mean(observed_nlr < permutation_nlr)))
-  
-  observed_hv <- table[table['HV'] == 'hv' & table[x]>q[2],] %>% nrow()
-  
-  permutation_hv = replicate(n, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'hv',]) , replace = FALSE), ] # sample the size of hvNLRs
-  sample_small[sample_small[x]>q[2],] %>% nrow()  # get expected above 95% 
-  })
-  
-  print(paste('observed hvNLRs in top 5%:', observed_hv))
-  print(paste('expected hvNLRs in top 5% by chance:', mean(permutation_hv)))
-  print(paste('p value hv in top 5%:', mean(observed_hv < permutation_hv)))
-  
-  observed_nhv <- table[table['HV'] == 'non-hv' & table[x]>q[2],] %>% nrow()
-  
-  permutation_nhv = replicate(n, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'non-hv',]) , replace = FALSE), ] # sample the size of non-hvNLRs
-  sample_small[sample_small[x]>q[2],] %>% nrow()  # get expected above 95% 
-  })
-  
-  print(paste('observed hvNLRs in top 5%:', observed_nhv))
-  print(paste('expected hvNLRs in top 5% by chance:', mean(permutation_nhv)))
-  print(paste('p value hv in top 5%:', mean(observed_hv < permutation_nhv)))
-  
-}
-
-on_top(table, 'Pi_by_lseff', 10000)
-on_top(table, 'D', 10000)
-
-```
-```{r}
-on_bottom <- function(table, x, n){
-  
-  q <- quantile(table %>% pull(x), c(.05, .95), na.rm=TRUE)
-  print(paste('calculating probability of ', x, '. The 5th percentile is: ', q[1]))
-  
-  observed_nlr <- table[table['HV'] != 'all_genes' & table[x]<q[1],] %>% nrow()
-  
-  permutation_nlr = replicate(n, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV != 'all_genes',]) , replace = FALSE), ] # sample the size of all NLRs
-  sample_small[sample_small[x]<q[1],] %>% nrow()  # get below 5% 
-  })
-  
-  print(paste('observed NLRs in bottom 5%:', observed_nlr))
-  print(paste('expected NLRs in bottom 5% by chance:', mean(permutation_nlr)))
-  print(paste('p value non-hv in bottom 5%:', mean(observed_nlr < permutation_nlr)))
-  
-  observed_hv <- table[table['HV'] == 'hv' & table[x]<q[1],] %>% nrow()
-  
-  permutation_hv = replicate(n, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'hv',]) , replace = FALSE), ] # sample the size of hvNLRs
-  sample_small[sample_small[x]<q[1],] %>% nrow()  # get expected above 95% 
-  })
-  
-  print(paste('observed hvNLRs in bottom 5%:', observed_hv))
-  print(paste('expected hvNLRs in bottom 5% by chance:', mean(permutation_hv)))
-  print(paste('p value hv in bottom 5%:', mean(observed_hv < permutation_hv)))
-  
-  observed_nhv <- table[table['HV'] == 'non-hv' & table[x]<q[1],] %>% nrow()
-  
-  permutation_nhv = replicate(n, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'non-hv',]) , replace = FALSE), ] # sample the size of non-hvNLRs
-  sample_small[sample_small[x]<q[1],] %>% nrow()  # get expected above 95% 
-  })
-  
-  print(paste('observed hvNLRs in bottom 5%:', observed_nhv))
-  print(paste('expected hvNLRs in bottom 5% by chance:', mean(permutation_nhv)))
-  print(paste('p value hv in bottom 5%:', mean(observed_hv < permutation_nhv)))
-  
-}
-
-on_bottom(table, 'Pi_by_lseff', 1000)
-on_bottom(table, 'D', 1000)
-```
-
-Supplemental figure 3, which shows the distribution of D and Pi with the percentiles
-```{r}
-d_distro <- ggplot(data=table)+geom_histogram(aes(x=D))+
-   geom_segment(x=1.50913785453558, xend=1.50913785453558, yend=0, y=20000, aes(color='5th and 95th percentiles'))+
-  geom_segment(x=-1.7870429615165, xend=-1.7870429615165, yend=0, y=20000, aes(color='5th and 95th percentiles'))+
-  geom_segment(data= table %>% filter(HV=='hv'), aes(
-      x= D,
-  		y = 0,
-  		xend = D,
-  		yend = -250, color='hvNLR'), alpha = 0.75, linewidth=0.5) +
-  	labs(colour = c('hvNLR', 'nonhvNLR')) +
-geom_segment(data= table %>% filter(HV=='non-hv'), aes(
-      x= D,
-  		y = -250,
-  		xend = D,
-  		yend = -500, color='non-hvNLR'), alpha = 0.75, linewidth=0.5) +
-  	labs(colour = c('hvNLR', 'nonhvNLR')) +
-  theme_classic() +
-  theme(legend.position='right', text=element_text(size=10), legend.title=element_blank())+
-  labs(title='Empirical Distribution of D values')+
-  xlab("Tajima's D")+
-  ylab('count')+
-  scale_color_manual(values=c('red', '#F8766D', '#00BFC4'))
-
-pi_distro <- ggplot(data=table)+geom_histogram(aes(x=Pi_by_lseff), bins=50)+
-  geom_segment(x=0.000316624887148824, xend=0.000316624887148824, yend=0, y=20000, aes(color='5th and 95th percentiles'))+
-  geom_segment(x=0.0140259207477425, xend=0.0140259207477425, yend=0, y=20000, aes(color='5th and 95th percentiles'))+
-  geom_segment(data= table %>% filter(HV=='hv'), aes(
-      x= Pi_by_lseff,
-  		y = 0,
-  		xend = Pi_by_lseff,
-  		yend = -500, color='hvNLR'), alpha = 0.75, linewidth=0.5) +
-  	labs(colour = c('hvNLR', 'nonhvNLR')) +
-geom_segment(data= table %>% filter(HV=='non-hv'), aes(
-      x= Pi_by_lseff,
-  		y = -500,
-  		xend = Pi_by_lseff,
-  		yend = -1000, color='non-hvNLR'), alpha = 0.75, linewidth=0.5) +
-  	labs(colour = c('hvNLR', 'nonhvNLR')) +
-  theme_classic() +
-  xlim(0, 0.10)+
-  theme(legend.position='right', text=element_text(size=10), legend.title=element_blank())+
-  labs(title='Empirical Distribution of Pi Values')+
-  xlab(expression(pi))+
-  ylab('count')+
-  scale_color_manual(values=c('red', '#F8766D', '#00BFC4'))
-
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\d_distro.png', plot=d_distro, dpi='retina', width=5, height=3)
-
-ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\e14_R\\final_figures\\pi_distro.png', plot=pi_distro, dpi='retina', width=5, height=3)
-```
-
-Repeat for the density of both distributions 
-```{r}
-#double double toil and trouble, two distros! 
-q_D <- quantile(table$D, c(.05, .95), na.rm = TRUE)
-q_Pi <- quantile(table$Pi_by_lseff, c(.05, .95), na.rm=TRUE)
-
-observed_nlr <- table %>% filter(HV != 'all_genes') %>% filter(D > q_D[2]) %>% filter(Pi_by_lseff > q_Pi[2]) %>% nrow()
-
-permutation_nlr = replicate(10000, {
-  sample_small <- table[sample(nrow(table), nrow(table[table$HV != 'all_genes',]) , replace = FALSE), ] # sample the size of non-hvNLRs
-  #sample_large <- meth[! rownames(meth) %in% rownames(sample_small), ] # sample the rest
-  sample_small%>% filter(D > q_D[2]) %>% filter(Pi_by_lseff > q_Pi[2]) %>% nrow()  # get expected above 95%
-})
-
-print(paste('observed NLRs in top 5% of both distros:', observed_nlr))
-print(paste('expected NLRs in top 5% of both distros by chance:', mean(permutation_nlr)))
-print(paste('p value NLRs in top of both distros:', mean(observed_nlr < permutation_nlr)))
-```
-
-
