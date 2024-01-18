@@ -61,7 +61,7 @@ Starting with some binaries: HV/nonhv
 
 ``` r
 itol_HV <- named_table[c('itol_name', 'HV')]
-itol_HV <- itol_HV %>% mutate(HV_itol=recode(HV, `0`='-1'))
+itol_HV <- itol_HV %>% mutate(HV_itol=recode(HV, 'hv'=1, 'non-hv'=-1)) %>% subset(select=c('itol_name', 'HV_itol'))
 write.xlsx(itol_HV, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\nlr_features\\figure_generation\\Source Data\\Figure 3\\3B\\itol_HV.xlsx')
 ```
 
@@ -79,7 +79,7 @@ TE could easily become a binary, which may be more informative anyway
 
 ``` r
 #how about TE within 1kb
-named_table['te_neighbor_500'] = named_table['te_dist'] <= 500
+named_table['te_neighbor_500'] = named_table['te_dist'] <= .5
 named_table$te_neighbor_500 <- named_table$te_neighbor_500 %>% as.integer() %>% as.character()
 
 itol_te_500 <- named_table[c('itol_name', 'te_neighbor_500')]
@@ -87,10 +87,4 @@ itol_te_500 <- itol_te_500 %>% mutate(te_neighbor_500=recode(te_neighbor_500, '0
 itol_te_500[is.na(itol_te_500)] <- '1'
 
 write.xlsx(itol_te_500, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\nlr_features\\figure_generation\\Source Data\\Figure 3\\3B\\itol_te_500.xlsx')
-```
-
-``` r
-#HV color strip 
-itol_HV <- itol_HV %>% mutate(HV_color=recode(HV, `1`='#F8766D', `0` = ''))
-write.xlsx(itol_HV, 'C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\nlr_features\\figure_generation\\Source Data\\Figure 3\\3B\\itol_HV.xlsx')
 ```
