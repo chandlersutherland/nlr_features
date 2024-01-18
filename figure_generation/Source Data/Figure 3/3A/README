@@ -1,0 +1,9 @@
+# Figure 3A: NLR features startified by cluster and N-terminal domain
+Numerical source data in NLR_feature_by_strata.csv includes: 
+- 'Gene' with the Arabidopsis Col-0 gene name as of Araport11
+- 'HV' with highly variable status 
+- 'log2_TPM' with log2(TPM+1) from rosette leaf tissue 
+- 'meth_percentage' is the %CG methylation from rosette leaf tissue
+- 'te_dist' distance to nearest TE in kbp
+- 'clustered': a categorical variable if NLR is clustered (within 50kb of another NLR) or not 
+- 'domain': whether N-terminal domain is CNL or TNL
