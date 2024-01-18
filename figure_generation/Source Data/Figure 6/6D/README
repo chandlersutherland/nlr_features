@@ -1,0 +1,6 @@
+# Figure 6D
+positive_selection.csv has the following columns: 
+- Gene
+- HV 
+- model: hyphy model to test selection used, either MEME (episodic) or FEL (pervasive).
+- value: Percentage of codons under positive selection determined by 95% confidence 

@@ -1,0 +1,14 @@
+#Figure 6A-C: NLR-wide population genetics statistics
+Calculated from alignments of NLRs using egglib and the egglib_NLR.ipynb script 
+The NLR_popgen.csv file contains: 
+- Gene 
+- HV 
+- name: common name 
+- D: Tajima's D 
+- Pi: Pi per effective site 
+- PiN: Pi per nonsynonymous site
+- PiS: Pi per synonymous site 
+- PiNPiS: PiN/PiS
+- Mutation.Probability.Score: as reported in Monroe 2020 
+- n: sample size HV and non-hv 
+- label: label used for plots 
