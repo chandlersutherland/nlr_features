@@ -1,4 +1,5 @@
 CpG_context.bw
+<<<<<<< HEAD
 CHG_context.bed.bw
 CpG_context.bw
 hv_NLR.bed
@@ -10,3 +11,5 @@ rpp4_uncropped_igv_screenshot.png
 rpp7_uncropped_igv_screenshot.png
 CHH_context.bw
 rpp7_uncropped igv screenshot.png
+=======
+>>>>>>> dd3d8c5266bbb7780a18e6957bfa295ef578d35b
