@@ -10,6 +10,7 @@ library(tidyverse)
 library(ggplot2)
 library(ggsignif)
 library(ggpubr)
+library(ggrepel)
 ```
 
 Goal: investigate any gene body CHH and CHG methylation that may indicate global silencing due to nearby TE elements. 
@@ -23,36 +24,30 @@ CHH_1 <- read.csv('C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasi
 
 CHH_2 <- read.csv('C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/e14_R/CHH_per_gene_met_biorep2.tsv', sep='\t', col.names = c('Chrom', 'Gene', 'meth_percentage', 'cg_count'), skip=1)
 
-working_table <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//working_table.xlsx")
+metadata_table <- readxl::read_xlsx(path="C://Users//chand//Box Sync//Krasileva_Lab//Research//chandler//Krasileva Lab//E14//all_gene_table.xlsx") %>% subset(select=c("Gene", 'HV'))
 ```
 
 ```{r}
-#use the clean function to add HV info 
-clean <- function(df) {
-   df2 <- df %>% merge(working_table, by='Gene', all=TRUE)
-  df3 <- df2 %>% mutate(HV=recode(HV, `0` = "non-hv", 
-                                       `1`="hv"))
-  df3$HV[is.na(df3$HV)]<-'all_genes'
-  df3$HV <- factor(df3$HV , levels=c("all_genes", "non-hv", "hv"))
-  df3
-  df4 <- df3 %>% subset(select=c('Gene', 'HV', 'meth_percentage')) %>% filter(!is.na(meth_percentage))
-  df4
-}
+#make a dataframe with CHH and CHG mean meth percentage columns 
+CHH <- merge(CHH_1, CHH_2, by='Gene', all=T) %>% 
+  filter(!is.na(meth_percentage.x) | !is.na(meth_percentage.y)) %>% 
+  rowwise() %>%
+  mutate(
+    CHH = mean(c_across(starts_with("meth_percentage")), na.rm = TRUE)) %>%
+  ungroup() %>%
+  subset(select=c('Gene', 'CHH'))
 
-#clean the samples, average the CHH and CHG methylation percentage, and combine into one dataframe for processing 
-samples <- list(CHH_1, CHH_2, CHG_1, CHG_2)
-names(samples) <- c('CHH_1', 'CHH_2', 'CHG_1', 'CHG_2')
-clean_samples <- lapply(names(samples), function(x) clean(samples[[x]]))
+CHG <- merge(CHG_1, CHG_2, by='Gene', all=T) %>% 
+  filter(!is.na(meth_percentage.x) | !is.na(meth_percentage.y)) %>% 
+  rowwise() %>%
+  mutate(
+    CHG = mean(c_across(starts_with("meth_percentage")), na.rm = TRUE)) %>%
+  ungroup() %>%
+  subset(select=c('Gene', 'CHG'))
 
-CHH <- merge(clean_samples[[1]], clean_samples[[2]], by='Gene') 
-CHH$CHH_mean <- rowMeans(CHH[, c(3,5)], na.rm=TRUE)
-CHH <- CHH %>% subset(select=c('Gene', 'CHH_mean', 'HV.x'))
+conglom <- merge(CHH, CHG, by='Gene', all=T) %>% merge(metadata_table, by='Gene', all=T) 
+conglom$HV[is.na(conglom$HV)]<-'all_genes'
 
-CHG <- merge(clean_samples[[3]], clean_samples[[4]], by='Gene') 
-CHG$CHG_mean <- rowMeans(CHG[, c(3,5)], na.rm=TRUE)
-CHG <- CHG %>% subset(select=c('Gene', 'CHG_mean', 'HV.y'))
-
-conglom <- merge(CHH, CHG, by='Gene')
 ```
 
 
@@ -61,41 +56,47 @@ conglom <- merge(CHH, CHG, by='Gene')
 conglom %>% filter(Gene %in% c('AT5G46510', 'AT4G16860', 'AT1G58602', 'AT4G16890'))
 
 #check the overall CHH CHG means and medians 
-conglom %>% group_by(HV.x) %>% summarize(CHH_mean = mean(CHH_mean), CHG_mean=mean(CHG_mean), CHH_median=median(CHH_mean), CHG_median=median(CHG_mean))
+conglom %>% group_by(HV) %>% summarize(CHH_mean = mean(CHH, na.rm=T), CHG_mean=mean(CHG, na.rm=T), CHH_median=median(CHH, na.rm=T), CHG_median=median(CHG, na.rm=T))
 ```
 
 Looks like there may be a subtle CHG signal? Is it significant though?
 ```{r}
-compare_means(CHG_mean~HV.x, conglom, method='t.test', paired=FALSE)
-compare_means(CHH_mean~HV.x, conglom, method='t.test', paired=FALSE)
+compare_means(CHG~HV, conglom, method='wilcox.test', paired=FALSE)
+compare_means(CHH~HV, conglom, method='wilcox.test', paired=FALSE)
 ```
-Nope, not significant.
 
 ```{r}
-ggplot(CHH %>% filter(HV.x != 'all_genes'),
-       aes(x=HV.x, y=CHH_mean, fill=HV.x))+
-    geom_violin()+
-    geom_point(position = position_jitterdodge(), alpha=0.3)+
-   ylim(0,30)+
-   geom_signif(comparisons=list(c('non-hv', 'hv')), 
-               map_signif_level = TRUE, y_position = c(25, 20), test=t.test)+
-    scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
-  theme_classic()+
-  labs(x = '', y='% gene body CHH')+
-  ggtitle('CHH methylation')+
-    theme(legend.position='none') 
+conglom_long_nlr <- conglom %>% 
+  pivot_longer(cols=c('CHH', 'CHG'), names_to='meth') %>% 
+  filter(HV != 'all_genes')
 
-ggplot(CHG %>% filter(HV.y != 'all_genes'),
-       aes(x=HV.y, y=CHG_mean, fill=HV.y))+
+#paste your path to the zenodo download to repeat 
+zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
+
+#input data 
+nlr_table <- read.csv(paste(zenodo_path, 'NLR_gene_table.csv'))
+
+cluster_info <- merge(conglom_long_nlr, nlr_table, by=c('Gene', 'HV'))
+cluster_info$HV <- factor(cluster_info$HV, levels=c('non-hv', 'hv'))
+CHG_CHH_p <- ggplot(cluster_info,
+       aes(x=HV, y=value, fill=HV, label=name))+
     geom_violin()+
-    geom_point(position = position_jitterdodge(), alpha=0.3)+
+  geom_text_repel(size=8/.pt)+
+    geom_point(alpha=0.3, size=1)+
    ylim(0,30)+
    geom_signif(comparisons=list(c('non-hv', 'hv')), 
                map_signif_level = TRUE, y_position = c(25, 20), test=t.test)+
     scale_fill_manual(values=c('#00BFC4',  '#F8766D'))+
   theme_classic()+
-  labs(x = '', y='% gene body CHG')+
-  ggtitle('CHG methylation')+
-    theme(legend.position='none') 
+  labs(x = '', y='% gene body methylation')+
+  theme(legend.position = 'none', text=element_text(size=10))+
+  facet_wrap(~meth)
+
+CHG_CHH_p 
+
+ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\Outputs\\NLR Features Paper\\EMBO Submission\\Figure Panels\\EV_fig2c.svg', plot=CHG_CHH_p, dpi=1000, width=100, height=55, unit='mm')
+
+source_data <- cluster_info %>% subset(select=c(Gene, HV, meth, value))
+write.csv(source_data, file="C:/Users/chand/Box Sync/Krasileva_Lab/Research/chandler/Krasileva Lab/E14/nlr_features/figure_generation/Source Data/EV Figure 2/EV 2C/CHG_CHH.csv")
 ```
 
