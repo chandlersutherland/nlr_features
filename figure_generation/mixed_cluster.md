@@ -143,16 +143,19 @@ nlr_avg <- alt %>%
 mixed_df <- mixed_df %>% subset(select=c('Gene', 'HV', 'cluster','log2_TPM', 'meth_percentage', 'te_dist', 'Pi', 'D', 'PiN', 'PiS', 'Mutation.Probability.Score', 'PiNPiS')) %>% rbind(nlr_avg)
 
 mixed_df$cluster <- factor(mixed_df$cluster, levels = c('cAT1G63350', 'cAT5G38340', 'RSG2', 'median NLR value'))
+mixed_df$HV <- factor(mixed_df$HV, levels=c('non-hv', 'hv'))
 ```
 
 # EV Figure 4
 
 ``` r
+expr_label <- expression('log'[2]*'(TPM)')
 expr <- mixed_df %>% 
   ggplot(aes(x=HV, y=log2_TPM)) +
   geom_point(aes(color=cluster), size=0.5)+
   geom_line(aes(group=cluster, color=cluster, linetype=cluster), linewidth=0.3)+
-  theme_classic()+
+  ylab(expr_label)+
+  theme_classic(base_size = 10)+
   scale_color_manual(values=c('median NLR value'='grey', 
                               'cAT1G63350'='lightgreen', 
                               'cAT5G38340'='dodgerblue', 
@@ -161,12 +164,12 @@ expr <- mixed_df %>%
                               'cAT1G63350'=1, 
                               'cAT5G38340'=1, 
                               'RSG2'=1))+
-  labs(x = '', y='log2TPM')
+  labs(x = '')
 meth_percentage <- mixed_df %>% 
   ggplot(aes(x=HV, y=meth_percentage)) +
   geom_point(aes(color=cluster), size=0.5)+
   geom_line(aes(group=cluster, color=cluster, linetype=cluster), linewidth=0.3)+
-  theme_classic()+
+  theme_classic(base_size = 10)+
   scale_color_manual(values=c('median NLR value'='grey', 
                               'cAT1G63350'='lightgreen', 
                               'cAT5G38340'='dodgerblue', 
@@ -181,7 +184,7 @@ d <- mixed_df %>%
   ggplot(aes(x=HV, y=D)) +
   geom_point(aes(color=cluster), size=0.5)+
   geom_line(aes(group=cluster, color=cluster, linetype=cluster), linewidth=0.3)+
-  theme_classic()+
+  theme_classic(base_size=10)+
   scale_color_manual(values=c('median NLR value'='grey', 
                               'cAT1G63350'='lightgreen', 
                               'cAT5G38340'='dodgerblue', 
@@ -190,12 +193,13 @@ d <- mixed_df %>%
                               'cAT1G63350'=1, 
                               'cAT5G38340'=1, 
                               'RSG2'=1))+
-  labs(x = '', y='D')
+  labs(x = '', y="Tajima's D")
+pi_exp <- expression(pi)
 pi <- mixed_df %>% 
   ggplot(aes(x=HV, y=Pi)) +
   geom_point(aes(color=cluster), size=0.5)+
   geom_line(aes(group=cluster, color=cluster, linetype=cluster), linewidth=0.3)+
-  theme_classic()+
+  theme_classic(base_size = 10)+
   scale_color_manual(values=c('median NLR value'='grey', 
                               'cAT1G63350'='lightgreen', 
                               'cAT5G38340'='dodgerblue', 
@@ -204,12 +208,12 @@ pi <- mixed_df %>%
                               'cAT1G63350'=1, 
                               'cAT5G38340'=1, 
                               'RSG2'=1))+
-  labs(x = '', y='Pi')
+  labs(x = '', y=pi_exp)
 te_dist <- mixed_df %>% 
   ggplot(aes(x=HV, y=te_dist)) +
   geom_point(aes(color=cluster), size=0.5)+
   geom_line(aes(group=cluster, color=cluster, linetype=cluster), linewidth=0.3)+
-  theme_classic()+
+  theme_classic(base_size=10)+
   scale_color_manual(values=c('median NLR value'='grey', 
                               'cAT1G63350'='lightgreen', 
                               'cAT5G38340'='dodgerblue', 
@@ -218,12 +222,12 @@ te_dist <- mixed_df %>%
                               'cAT1G63350'=1, 
                               'cAT5G38340'=1, 
                               'RSG2'=1))+
-  labs(x = '', y='TE Distance')
+  labs(x = '', y='TE Distance (kbp)')
 PiN <- mixed_df %>% 
   ggplot(aes(x=HV, y=PiN)) +
   geom_point(aes(color=cluster), size=0.5)+
   geom_line(aes(group=cluster, color=cluster, linetype=cluster), linewidth=0.3)+
-  theme_classic()+
+  theme_classic(base_size=10)+
   scale_color_manual(values=c('median NLR value'='grey', 
                               'cAT1G63350'='lightgreen', 
                               'cAT5G38340'='dodgerblue', 
@@ -232,12 +236,12 @@ PiN <- mixed_df %>%
                               'cAT1G63350'=1, 
                               'cAT5G38340'=1, 
                               'RSG2'=1))+
-  labs(x = '', y='PiN')
+  labs(x = '', y=expression(pi[N]))
 PiS <- mixed_df %>% 
   ggplot(aes(x=HV, y=PiS)) +
   geom_point(aes(color=cluster), size=0.5)+
   geom_line(aes(group=cluster, color=cluster, linetype=cluster), linewidth=0.3)+
-  theme_classic()+
+  theme_classic(base_size=10)+
   scale_color_manual(values=c('median NLR value'='grey', 
                               'cAT1G63350'='lightgreen', 
                               'cAT5G38340'='dodgerblue', 
@@ -246,7 +250,7 @@ PiS <- mixed_df %>%
                               'cAT1G63350'=1, 
                               'cAT5G38340'=1, 
                               'RSG2'=1))+
-  labs(x = '', y='PiS')
+  labs(x = '', y=expression(pi[S]))
 PiNPiS <- mixed_df %>% 
   ggplot(aes(x=HV, y=PiN/PiS)) +
   geom_point(aes(color=cluster), size=0.5)+
@@ -260,12 +264,12 @@ PiNPiS <- mixed_df %>%
                               'cAT1G63350'=1, 
                               'cAT5G38340'=1, 
                               'RSG2'=1))+
-  labs(x = '', y='PiNPiS')
+  labs(x = '', y=expression(paste(pi[N],'/',pi[S])))
 mut_prob <- mixed_df %>% 
   ggplot(aes(x=HV, y=Mutation.Probability.Score)) +
   geom_point(aes(color=cluster), size=0.5)+
   geom_line(aes(group=cluster, color=cluster, linetype=cluster), linewidth=0.3)+
-  theme_classic()+
+  theme_classic(base_size=10)+
   scale_color_manual(values=c('median NLR value'='grey', 
                               'cAT1G63350'='lightgreen', 
                               'cAT5G38340'='dodgerblue', 
