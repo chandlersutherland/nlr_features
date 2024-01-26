@@ -30,9 +30,57 @@ load data
 zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
 #load in all gene data 
 table <- read.csv(paste(zenodo_path, 'all_gene_table.csv'))
+#set number of replicates 
+replicates <- 1000
+```
+# D and Pi difference in means 
+
+```{r}
+# write a general permutation test function that can be used across features 
+# first, calculate the observed value
+observe <- function(df, col_index, hv_status){
+  observed <- mean(df%>%filter(HV==hv_status)%>% pull(col_index)%>%na.omit()) - 
+    mean(df %>% filter(HV=='all_genes')%>%pull(col_index)%>%na.omit())
+  observed
+}
+
+permute <- function(df, col_index, hv_status) {
+  # build null distribution
+  permutation = replicate(replicates, { 
+    df <- df %>% drop_na(col_index)
+    sample_small <- df[sample(nrow(df), nrow(df[df$HV == hv_status,]) , replace = FALSE), ] # sample the size of hvNLRs
+    sample_large <- df[! rownames(df) %in% rownames(sample_small), ] # sample the rest
+    mean(sample_small %>% pull(col_index))-mean(sample_large %>% pull(col_index)) # get expected mean
+})
+  permutation
+}
+
+
+p_calc <- function(df, col_index){
+  o <- observe(df, col_index, 'hv')
+  p <- permute(df, col_index, 'hv')
+  pval <- mean(o < p)
+  
+  o2 <- observe(df, col_index, 'non-hv')
+  p2 <- permute(df, col_index, 'non-hv')
+  pval2 <- mean(o2 < p2)
+  
+  print(paste(colnames(df)[col_index]))
+  print(paste('hv_p: ', pval, ' nonhv_p:', pval2))
+}
 ```
 
-# D and Pi 
+
+Pi permutation test difference in means:
+```{r}
+#apply to Pi
+p_calc(table, 7)
+
+#apply to D
+p_calc(table, 8)
+```
+
+# D and Pi top 5% 
 We are interested in the probability of observing NLRs, hvNLRs, or non-hvNLRs in the top 5% of an empirical distribution 
 ```{r}
 #function that takes in table, column name as a string, and n replicates, and outputs probability of observing NLRs, hvNLRs, and non-hvNLRs in the top 5% of the distribution by chance 
@@ -114,14 +162,32 @@ on_bottom <- function(table, x, n){
   sample_small[sample_small[x]<q[1],] %>% nrow()  # get expected above 95% 
   })
   
-  print(paste('observed hvNLRs in bottom 5%:', observed_nhv))
-  print(paste('expected hvNLRs in bottom 5% by chance:', mean(permutation_nhv)))
-  print(paste('p value hv in bottom 5%:', mean(observed_hv < permutation_nhv)))
+  print(paste('observed non-hvNLRs in bottom 5%:', observed_nhv))
+  print(paste('expected non-hvNLRs in bottom 5% by chance:', mean(permutation_nhv)))
+  print(paste('p value non-hv in bottom 5%:', mean(observed_hv > permutation_nhv)))
   
 }
 
 on_bottom(table, 'Pi', 1000)
 on_bottom(table, 'D', 1000)
+```
+
+Check hvNLRs in bottom and top of empirical distribution of D
+```{r}
+x <- 'D'
+n <- 1000
+q <- quantile(table %>% pull(x), c(.05, .95), na.rm=TRUE)
+observed_hv <- table %>% filter(HV == 'hv') %>% filter(D<q[1]) %>% filter(D>q[2]) %>% nrow()
+
+permutation_hv = replicate(n, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'hv',]), replace = FALSE), ] 
+  sample_small %>% filter(D<q[1] | D>q[2]) %>% nrow()  # get expected above 95% 
+  })
+
+print(paste('observed hvNLRs in either tail:', observed_hv))
+print(paste('expected hvNLRs in either tail by chance:', mean(permutation_hv)))
+print(paste('p value hv in either tail:', mean(observed_hv < permutation_hv)))
+
 ```
 
 Supplemental figure 3, which shows the distribution of D and Pi with the percentiles

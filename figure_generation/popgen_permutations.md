@@ -64,9 +64,79 @@ load data
 zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\Krasileva Lab\\E14\\Zenodo V2\\"
 #load in all gene data 
 table <- read.csv(paste(zenodo_path, 'all_gene_table.csv'))
+#set number of replicates 
+replicates <- 1000
 ```
 
-# D and Pi
+# D and Pi difference in means
+
+``` r
+# write a general permutation test function that can be used across features 
+# first, calculate the observed value
+observe <- function(df, col_index, hv_status){
+  observed <- mean(df%>%filter(HV==hv_status)%>% pull(col_index)%>%na.omit()) - 
+    mean(df %>% filter(HV=='all_genes')%>%pull(col_index)%>%na.omit())
+  observed
+}
+
+permute <- function(df, col_index, hv_status) {
+  # build null distribution
+  permutation = replicate(replicates, { 
+    df <- df %>% drop_na(col_index)
+    sample_small <- df[sample(nrow(df), nrow(df[df$HV == hv_status,]) , replace = FALSE), ] # sample the size of hvNLRs
+    sample_large <- df[! rownames(df) %in% rownames(sample_small), ] # sample the rest
+    mean(sample_small %>% pull(col_index))-mean(sample_large %>% pull(col_index)) # get expected mean
+})
+  permutation
+}
+
+
+p_calc <- function(df, col_index){
+  o <- observe(df, col_index, 'hv')
+  p <- permute(df, col_index, 'hv')
+  pval <- mean(o < p)
+  
+  o2 <- observe(df, col_index, 'non-hv')
+  p2 <- permute(df, col_index, 'non-hv')
+  pval2 <- mean(o2 < p2)
+  
+  print(paste(colnames(df)[col_index]))
+  print(paste('hv_p: ', pval, ' nonhv_p:', pval2))
+}
+```
+
+Pi permutation test difference in means:
+
+``` r
+#apply to Pi
+p_calc(table, 7)
+```
+
+    ## Warning: Using an external vector in selections was deprecated in tidyselect 1.1.0.
+    ## ℹ Please use `all_of()` or `any_of()` instead.
+    ##   # Was:
+    ##   data %>% select(col_index)
+    ## 
+    ##   # Now:
+    ##   data %>% select(all_of(col_index))
+    ## 
+    ## See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
+    ## [1] "Pi"
+    ## [1] "hv_p:  0  nonhv_p: 0"
+
+``` r
+#apply to D
+p_calc(table, 8)
+```
+
+    ## [1] "D"
+    ## [1] "hv_p:  0.006  nonhv_p: 1"
+
+# D and Pi top 5%
 
 We are interested in the probability of observing NLRs, hvNLRs, or
 non-hvNLRs in the top 5% of an empirical distribution
@@ -117,13 +187,13 @@ on_top(table, 'Pi', 10000)
 
     ## [1] "calculating probability of  Pi . The 95th percentile is:  0.0140489927540266"
     ## [1] "observed NLRs in top 5%: 63"
-    ## [1] "expected NLRs in top 5% by chance: 9.4444"
+    ## [1] "expected NLRs in top 5% by chance: 9.4217"
     ## [1] "p value non-hv in top 5%: 0"
     ## [1] "observed hvNLRs in top 5%: 35"
-    ## [1] "expected hvNLRs in top 5% by chance: 2.5193"
+    ## [1] "expected hvNLRs in top 5% by chance: 2.4933"
     ## [1] "p value hv in top 5%: 0"
     ## [1] "observed hvNLRs in top 5%: 28"
-    ## [1] "expected hvNLRs in top 5% by chance: 6.9743"
+    ## [1] "expected hvNLRs in top 5% by chance: 7.0036"
     ## [1] "p value hv in top 5%: 0"
 
 ``` r
@@ -132,14 +202,14 @@ on_top(table, 'D', 10000)
 
     ## [1] "calculating probability of  D . The 95th percentile is:  1.50881426721351"
     ## [1] "observed NLRs in top 5%: 1"
-    ## [1] "expected NLRs in top 5% by chance: 12.0985"
-    ## [1] "p value non-hv in top 5%: 0.9999"
+    ## [1] "expected NLRs in top 5% by chance: 12.102"
+    ## [1] "p value non-hv in top 5%: 1"
     ## [1] "observed hvNLRs in top 5%: 0"
-    ## [1] "expected hvNLRs in top 5% by chance: 3.2046"
-    ## [1] "p value hv in top 5%: 0.9628"
+    ## [1] "expected hvNLRs in top 5% by chance: 3.2033"
+    ## [1] "p value hv in top 5%: 0.9629"
     ## [1] "observed hvNLRs in top 5%: 1"
-    ## [1] "expected hvNLRs in top 5% by chance: 8.8973"
-    ## [1] "p value hv in top 5%: 1"
+    ## [1] "expected hvNLRs in top 5% by chance: 8.9656"
+    ## [1] "p value hv in top 5%: 0.9998"
 
 ``` r
 on_bottom <- function(table, x, n){
@@ -176,9 +246,9 @@ on_bottom <- function(table, x, n){
   sample_small[sample_small[x]<q[1],] %>% nrow()  # get expected above 95% 
   })
   
-  print(paste('observed hvNLRs in bottom 5%:', observed_nhv))
-  print(paste('expected hvNLRs in bottom 5% by chance:', mean(permutation_nhv)))
-  print(paste('p value hv in bottom 5%:', mean(observed_hv < permutation_nhv)))
+  print(paste('observed non-hvNLRs in bottom 5%:', observed_nhv))
+  print(paste('expected non-hvNLRs in bottom 5% by chance:', mean(permutation_nhv)))
+  print(paste('p value non-hv in bottom 5%:', mean(observed_hv > permutation_nhv)))
   
 }
 
@@ -187,14 +257,14 @@ on_bottom(table, 'Pi', 1000)
 
     ## [1] "calculating probability of  Pi . The 5th percentile is:  0.000316624887148824"
     ## [1] "observed NLRs in bottom 5%: 0"
-    ## [1] "expected NLRs in bottom 5% by chance: 9.553"
+    ## [1] "expected NLRs in bottom 5% by chance: 9.467"
     ## [1] "p value non-hv in bottom 5%: 1"
     ## [1] "observed hvNLRs in bottom 5%: 0"
-    ## [1] "expected hvNLRs in bottom 5% by chance: 2.443"
-    ## [1] "p value hv in bottom 5%: 0.923"
-    ## [1] "observed hvNLRs in bottom 5%: 0"
-    ## [1] "expected hvNLRs in bottom 5% by chance: 6.912"
-    ## [1] "p value hv in bottom 5%: 1"
+    ## [1] "expected hvNLRs in bottom 5% by chance: 2.523"
+    ## [1] "p value hv in bottom 5%: 0.916"
+    ## [1] "observed non-hvNLRs in bottom 5%: 0"
+    ## [1] "expected non-hvNLRs in bottom 5% by chance: 6.754"
+    ## [1] "p value non-hv in bottom 5%: 0"
 
 ``` r
 on_bottom(table, 'D', 1000)
@@ -202,14 +272,44 @@ on_bottom(table, 'D', 1000)
 
     ## [1] "calculating probability of  D . The 5th percentile is:  -1.78922602865888"
     ## [1] "observed NLRs in bottom 5%: 46"
-    ## [1] "expected NLRs in bottom 5% by chance: 12.146"
+    ## [1] "expected NLRs in bottom 5% by chance: 12.05"
     ## [1] "p value non-hv in bottom 5%: 0"
     ## [1] "observed hvNLRs in bottom 5%: 0"
-    ## [1] "expected hvNLRs in bottom 5% by chance: 3.188"
-    ## [1] "p value hv in bottom 5%: 0.954"
-    ## [1] "observed hvNLRs in bottom 5%: 46"
-    ## [1] "expected hvNLRs in bottom 5% by chance: 8.927"
-    ## [1] "p value hv in bottom 5%: 1"
+    ## [1] "expected hvNLRs in bottom 5% by chance: 3.251"
+    ## [1] "p value hv in bottom 5%: 0.958"
+    ## [1] "observed non-hvNLRs in bottom 5%: 46"
+    ## [1] "expected non-hvNLRs in bottom 5% by chance: 8.921"
+    ## [1] "p value non-hv in bottom 5%: 0"
+
+Check hvNLRs in bottom and top of empirical distribution of D
+
+``` r
+x <- 'D'
+n <- 1000
+q <- quantile(table %>% pull(x), c(.05, .95), na.rm=TRUE)
+observed_hv <- table %>% filter(HV == 'hv') %>% filter(D<q[1]) %>% filter(D>q[2]) %>% nrow()
+
+permutation_hv = replicate(n, {
+  sample_small <- table[sample(nrow(table), nrow(table[table$HV == 'hv',]), replace = FALSE), ] 
+  sample_small %>% filter(D<q[1] | D>q[2]) %>% nrow()  # get expected above 95% 
+  })
+
+print(paste('observed hvNLRs in either tail:', observed_hv))
+```
+
+    ## [1] "observed hvNLRs in either tail: 0"
+
+``` r
+print(paste('expected hvNLRs in either tail by chance:', mean(permutation_hv)))
+```
+
+    ## [1] "expected hvNLRs in either tail by chance: 3.389"
+
+``` r
+print(paste('p value hv in either tail:', mean(observed_hv < permutation_hv)))
+```
+
+    ## [1] "p value hv in either tail: 0.971"
 
 Supplemental figure 3, which shows the distribution of D and Pi with the
 percentiles
@@ -315,10 +415,10 @@ print(paste('observed NLRs in top 5% of both distros:', observed_nlr))
 print(paste('expected NLRs in top 5% of both distros by chance:', mean(permutation_nlr)))
 ```
 
-    ## [1] "expected NLRs in top 5% of both distros by chance: 1.6874"
+    ## [1] "expected NLRs in top 5% of both distros by chance: 1.7119"
 
 ``` r
 print(paste('p value NLRs in top of both distros:', mean(observed_nlr < permutation_nlr)))
 ```
 
-    ## [1] "p value NLRs in top of both distros: 0.5053"
+    ## [1] "p value NLRs in top of both distros: 0.5107"
