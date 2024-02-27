@@ -416,6 +416,9 @@ facet_sites_internal
 ```{r}
 p_pervasive <- compare_means(value~HV, sites_internal_long %>% filter(model=='Pervasive'), method='wilcox.test', paired=FALSE)$p
 p_episodic <- compare_means(value~HV, sites_internal_long %>% filter(model=='Episodic'), method='wilcox.test', paired=FALSE)$p
+
+print(p_pervasive)
+print(p_episodic)
 ```
 
 Finally save
