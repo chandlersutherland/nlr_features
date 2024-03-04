@@ -33,7 +33,9 @@ zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\K
 col_popgen <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//egglib_results.tsv") %>%
   mutate(Pi=Pi_raw/lseff)%>%
   mutate(PiNPiS = PiN/PiS) %>%
-  mutate(domain=recode(domain, 'cc' = "CC", 'tir'="TIR", 'nbarc'='NBARC', 'lrr'='LRR', 'cds'='CDS'))
+  mutate(domain=recode(domain, 'cc' = "CC", 'tir'="TIR", 'nbarc'='NBARC', 'lrr'='LRR', 'cds'='CDS')) %>%
+  subset(select=-c(`...1`))%>%
+  unique()
 
 col_popgen$domain <- factor(col_popgen$domain, levels=c('CDS', 'CC', 'TIR', 'NBARC', 'LRR'))
 col_popgen$HV <- factor(col_popgen$HV, levels=c('non-hv', 'hv'))
@@ -146,7 +148,7 @@ pvalues_adjust <- p.adjust(pvalues, method = 'BH', n = length(pvalues))
 print(pvalues_adjust)
 ```
 
-    ## [1] 1.898108e-17 8.195799e-06 7.266158e-09 2.631707e-16 2.733286e-17
+    ## [1] 2.124321e-17 8.195799e-06 8.423913e-09 3.025515e-16 3.085935e-17
 
 ``` r
 compare_means(Pi~domain, col_popgen %>% filter(HV=='hv'), method='wilcox.test', paired=FALSE)
@@ -173,16 +175,16 @@ compare_means(Pi~domain, col_popgen %>% filter(HV=='non-hv'), method='wilcox.tes
     ## # A tibble: 10 × 8
     ##    .y.   group1 group2        p  p.adj p.format p.signif method  
     ##    <chr> <chr>  <chr>     <dbl>  <dbl> <chr>    <chr>    <chr>   
-    ##  1 Pi    CDS    CC     0.246    1      0.24631  ns       Wilcoxon
-    ##  2 Pi    CDS    TIR    0.829    1      0.82926  ns       Wilcoxon
-    ##  3 Pi    CDS    NBARC  0.000458 0.0046 0.00046  ***      Wilcoxon
-    ##  4 Pi    CDS    LRR    0.848    1      0.84805  ns       Wilcoxon
-    ##  5 Pi    CC     TIR    0.439    1      0.43882  ns       Wilcoxon
-    ##  6 Pi    CC     NBARC  0.840    1      0.84032  ns       Wilcoxon
-    ##  7 Pi    CC     LRR    0.314    1      0.31404  ns       Wilcoxon
-    ##  8 Pi    TIR    NBARC  0.0148   0.12   0.01480  *        Wilcoxon
-    ##  9 Pi    TIR    LRR    0.991    1      0.99125  ns       Wilcoxon
-    ## 10 Pi    NBARC  LRR    0.00510  0.046  0.00510  **       Wilcoxon
+    ##  1 Pi    CDS    CC     0.257    1      0.25702  ns       Wilcoxon
+    ##  2 Pi    CDS    TIR    0.957    1      0.95724  ns       Wilcoxon
+    ##  3 Pi    CDS    NBARC  0.000664 0.0066 0.00066  ***      Wilcoxon
+    ##  4 Pi    CDS    LRR    0.846    1      0.84572  ns       Wilcoxon
+    ##  5 Pi    CC     TIR    0.411    1      0.41094  ns       Wilcoxon
+    ##  6 Pi    CC     NBARC  0.847    1      0.84668  ns       Wilcoxon
+    ##  7 Pi    CC     LRR    0.321    1      0.32088  ns       Wilcoxon
+    ##  8 Pi    TIR    NBARC  0.0124   0.099  0.01237  *        Wilcoxon
+    ##  9 Pi    TIR    LRR    0.886    1      0.88585  ns       Wilcoxon
+    ## 10 Pi    NBARC  LRR    0.00673  0.061  0.00673  **       Wilcoxon
 
 Plot:
 
@@ -234,25 +236,25 @@ pvalues <- c(cds, cc, tir, nbarc, lrr)
 p.adjust(pvalues, method = 'BH', n = length(pvalues))
 ```
 
-    ## [1] 6.940697e-08 1.114327e-02 3.731634e-03 3.983814e-05 8.448988e-05
+    ## [1] 7.086041e-08 1.114327e-02 4.640712e-03 3.000130e-05 5.205343e-05
 
 ``` r
 compare_means(D~domain, col_popgen, method='wilcox.test')
 ```
 
     ## # A tibble: 10 × 8
-    ##    .y.   group1 group2        p  p.adj p.format p.signif method  
-    ##    <chr> <chr>  <chr>     <dbl>  <dbl> <chr>    <chr>    <chr>   
-    ##  1 D     CDS    CC     0.856    1      0.85649  ns       Wilcoxon
-    ##  2 D     CDS    TIR    0.284    1      0.28415  ns       Wilcoxon
-    ##  3 D     CDS    NBARC  0.00392  0.035  0.00392  **       Wilcoxon
-    ##  4 D     CDS    LRR    0.987    1      0.98657  ns       Wilcoxon
-    ##  5 D     CC     TIR    0.259    1      0.25859  ns       Wilcoxon
-    ##  6 D     CC     NBARC  0.0511   0.36   0.05108  ns       Wilcoxon
-    ##  7 D     CC     LRR    0.995    1      0.99521  ns       Wilcoxon
-    ##  8 D     TIR    NBARC  0.000793 0.0079 0.00079  ***      Wilcoxon
-    ##  9 D     TIR    LRR    0.356    1      0.35626  ns       Wilcoxon
-    ## 10 D     NBARC  LRR    0.0108   0.087  0.01083  *        Wilcoxon
+    ##    .y.   group1 group2       p p.adj p.format p.signif method  
+    ##    <chr> <chr>  <chr>    <dbl> <dbl> <chr>    <chr>    <chr>   
+    ##  1 D     CDS    CC     0.837   1     0.8367   ns       Wilcoxon
+    ##  2 D     CDS    TIR    0.327   1     0.3268   ns       Wilcoxon
+    ##  3 D     CDS    NBARC  0.00475 0.043 0.0047   **       Wilcoxon
+    ##  4 D     CDS    LRR    0.931   1     0.9309   ns       Wilcoxon
+    ##  5 D     CC     TIR    0.295   1     0.2955   ns       Wilcoxon
+    ##  6 D     CC     NBARC  0.0575  0.4   0.0575   ns       Wilcoxon
+    ##  7 D     CC     LRR    0.957   1     0.9566   ns       Wilcoxon
+    ##  8 D     TIR    NBARC  0.00132 0.013 0.0013   **       Wilcoxon
+    ##  9 D     TIR    LRR    0.430   1     0.4297   ns       Wilcoxon
+    ## 10 D     NBARC  LRR    0.0102  0.081 0.0102   *        Wilcoxon
 
 ``` r
 compare_means(D~domain, col_popgen %>% filter(HV=='hv'), method='wilcox.test')
@@ -279,16 +281,16 @@ compare_means(D~domain, col_popgen %>% filter(HV=='non-hv'), method='wilcox.test
     ## # A tibble: 10 × 8
     ##    .y.   group1 group2       p p.adj p.format p.signif method  
     ##    <chr> <chr>  <chr>    <dbl> <dbl> <chr>    <chr>    <chr>   
-    ##  1 D     CDS    CC     0.537   1     0.5372   ns       Wilcoxon
-    ##  2 D     CDS    TIR    0.705   1     0.7049   ns       Wilcoxon
-    ##  3 D     CDS    NBARC  0.00359 0.036 0.0036   **       Wilcoxon
-    ##  4 D     CDS    LRR    0.908   1     0.9081   ns       Wilcoxon
-    ##  5 D     CC     TIR    0.553   1     0.5527   ns       Wilcoxon
-    ##  6 D     CC     NBARC  0.123   0.86  0.1225   ns       Wilcoxon
-    ##  7 D     CC     LRR    0.617   1     0.6172   ns       Wilcoxon
-    ##  8 D     TIR    NBARC  0.00747 0.067 0.0075   **       Wilcoxon
-    ##  9 D     TIR    LRR    0.674   1     0.6743   ns       Wilcoxon
-    ## 10 D     NBARC  LRR    0.0153  0.12  0.0153   *        Wilcoxon
+    ##  1 D     CDS    CC     0.497    1    0.497    ns       Wilcoxon
+    ##  2 D     CDS    TIR    0.777    1    0.777    ns       Wilcoxon
+    ##  3 D     CDS    NBARC  0.00404  0.04 0.004    **       Wilcoxon
+    ##  4 D     CDS    LRR    0.960    1    0.960    ns       Wilcoxon
+    ##  5 D     CC     TIR    0.607    1    0.607    ns       Wilcoxon
+    ##  6 D     CC     NBARC  0.135    0.94 0.135    ns       Wilcoxon
+    ##  7 D     CC     LRR    0.570    1    0.570    ns       Wilcoxon
+    ##  8 D     TIR    NBARC  0.0118   0.11 0.012    *        Wilcoxon
+    ##  9 D     TIR    LRR    0.770    1    0.770    ns       Wilcoxon
+    ## 10 D     NBARC  LRR    0.0135   0.11 0.013    *        Wilcoxon
 
 ``` r
 kruskal.test(D ~ domain, data = col_popgen)
@@ -298,7 +300,7 @@ kruskal.test(D ~ domain, data = col_popgen)
     ##  Kruskal-Wallis rank sum test
     ## 
     ## data:  D by domain
-    ## Kruskal-Wallis chi-squared = 14.665, df = 4, p-value = 0.005449
+    ## Kruskal-Wallis chi-squared = 13.889, df = 4, p-value = 0.007659
 
 ``` r
 kruskal.test(D ~ domain, data = col_popgen%>%filter(HV=='hv'))
@@ -318,7 +320,7 @@ kruskal.test(D ~ domain, data = col_popgen%>%filter(HV=='non-hv'))
     ##  Kruskal-Wallis rank sum test
     ## 
     ## data:  D by domain
-    ## Kruskal-Wallis chi-squared = 11.69, df = 4, p-value = 0.01981
+    ## Kruskal-Wallis chi-squared = 11.265, df = 4, p-value = 0.02374
 
 Plot:
 
@@ -427,6 +429,10 @@ p.adjust(c(pis, pin), method='BH', 2)
 ``` r
 pi_long$HV <- factor(pi_long$HV, levels=c('non-hv', 'hv'))
 
+sample_size <- pi_long %>% group_by(HV, pi_type) %>% summarize(n=n())
+```
+
+``` r
 p13 <- pi_long %>%
   ggplot(aes(x=HV, y=value, fill=HV))+
   geom_violin(lwd=0.25)+
@@ -494,7 +500,7 @@ compare_means(PiNPiS~HV, col_popgen%>%filter(domain=='CDS'), method='wilcox.test
     ## # A tibble: 1 × 8
     ##   .y.    group1 group2     p p.adj p.format p.signif method  
     ##   <chr>  <chr>  <chr>  <dbl> <dbl> <chr>    <chr>    <chr>   
-    ## 1 PiNPiS non-hv hv     0.173  0.17 0.17     ns       Wilcoxon
+    ## 1 PiNPiS non-hv hv     0.187  0.19 0.19     ns       Wilcoxon
 
 ``` r
 lm(PiN ~ PiS, data=NLR_popgen %>% filter(HV=='hv'))
@@ -527,7 +533,7 @@ compare_means(PiNPiS~HV, col_popgen %>% filter(domain=='LRR'), method='wilcox.te
     ## # A tibble: 1 × 8
     ##   .y.    group1 group2     p p.adj p.format p.signif method  
     ##   <chr>  <chr>  <chr>  <dbl> <dbl> <chr>    <chr>    <chr>   
-    ## 1 PiNPiS non-hv hv     0.684  0.68 0.68     ns       Wilcoxon
+    ## 1 PiNPiS non-hv hv     0.686  0.69 0.69     ns       Wilcoxon
 
 ``` r
 col_popgen %>% filter(domain=='LRR') %>% group_by(HV) %>% summarize(mean=mean(PiNPiS, na.rm=TRUE), median=median(PiNPiS, na.rm=TRUE))
@@ -536,13 +542,23 @@ col_popgen %>% filter(domain=='LRR') %>% group_by(HV) %>% summarize(mean=mean(Pi
     ## # A tibble: 2 × 3
     ##   HV      mean median
     ##   <fct>  <dbl>  <dbl>
-    ## 1 non-hv 0.736  0.402
+    ## 1 non-hv 0.741  0.416
     ## 2 hv     0.657  0.422
 
 ## C: Mutation plot
 
 ``` r
 NLR_popgen$HV <- factor(NLR_popgen$HV, levels=c('non-hv', 'hv'))
+NLR_popgen %>% group_by(HV) %>% summarize(n=n())
+```
+
+    ## # A tibble: 2 × 2
+    ##   HV         n
+    ##   <fct>  <int>
+    ## 1 non-hv    97
+    ## 2 hv        35
+
+``` r
 mut_prob_plot <- NLR_popgen %>%
   ggplot(aes(x=HV, y=Mutation.Probability.Score, fill=HV))+
   geom_violin(lwd=0.25)+
@@ -606,6 +622,19 @@ print(med_percent_increase[[1]])
 ## D: Positive selection sites plot:
 
 ``` r
+sites_internal_long %>% group_by(HV, model) %>% summarize(n=n())
+```
+
+    ## # A tibble: 4 × 3
+    ## # Groups:   HV [2]
+    ##   HV     model         n
+    ##   <fct>  <chr>     <int>
+    ## 1 non-hv Episodic     97
+    ## 2 non-hv Pervasive    97
+    ## 3 hv     Episodic     35
+    ## 4 hv     Pervasive    35
+
+``` r
 facet_sites_internal <- sites_internal_long %>%
   ggplot(aes(x=HV, y=value*100, fill=HV))+
    geom_beeswarm(size=0.4, aes(color=HV))+
@@ -662,7 +691,7 @@ pvalues <- c(cds, cc, tir, nbarc, lrr)
 p.adjust(pvalues, method = 'BH', n = length(pvalues))
 ```
 
-    ## [1] 0.4638078 0.4734848 0.4734848 0.4638078 0.6842724
+    ## [1] 0.4734848 0.4734848 0.4734848 0.4734848 0.6859874
 
 ``` r
 PiNPiS_domain <- ggplot(col_popgen,

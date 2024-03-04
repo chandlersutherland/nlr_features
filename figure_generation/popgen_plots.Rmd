@@ -35,7 +35,9 @@ zenodo_path <- "C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\K
 col_popgen <- read_tsv("//wsl.localhost//Ubuntu//home//chandlersutherland//scratch//egglib_results.tsv") %>%
   mutate(Pi=Pi_raw/lseff)%>%
   mutate(PiNPiS = PiN/PiS) %>%
-  mutate(domain=recode(domain, 'cc' = "CC", 'tir'="TIR", 'nbarc'='NBARC', 'lrr'='LRR', 'cds'='CDS'))
+  mutate(domain=recode(domain, 'cc' = "CC", 'tir'="TIR", 'nbarc'='NBARC', 'lrr'='LRR', 'cds'='CDS')) %>%
+  subset(select=-c(`...1`))%>%
+  unique()
 
 col_popgen$domain <- factor(col_popgen$domain, levels=c('CDS', 'CC', 'TIR', 'NBARC', 'LRR'))
 col_popgen$HV <- factor(col_popgen$HV, levels=c('non-hv', 'hv'))
@@ -284,7 +286,7 @@ ggsave(filename='C:\\Users\\chand\\Box Sync\\Krasileva_Lab\\Research\\chandler\\
 
 ## A: PiN and PiS plots
 
-```{r Fig6A}
+```{r sample_size}
 pi_long <- NLR_popgen %>% subset(select=c('Gene', 'PiS', 'PiN', 'HV')) %>% pivot_longer(
     cols = c(PiS, PiN), 
     names_to = "pi_type",
@@ -300,6 +302,11 @@ p.adjust(c(pis, pin), method='BH', 2)
 
 pi_long$HV <- factor(pi_long$HV, levels=c('non-hv', 'hv'))
 
+sample_size <- pi_long %>% group_by(HV, pi_type) %>% summarize(n=n())
+```
+
+
+```{r Fig6A}
 p13 <- pi_long %>%
   ggplot(aes(x=HV, y=value, fill=HV))+
   geom_violin(lwd=0.25)+
@@ -360,6 +367,7 @@ col_popgen %>% filter(domain=='LRR') %>% group_by(HV) %>% summarize(mean=mean(Pi
 
 ```{r Fig6C}
 NLR_popgen$HV <- factor(NLR_popgen$HV, levels=c('non-hv', 'hv'))
+NLR_popgen %>% group_by(HV) %>% summarize(n=n())
 mut_prob_plot <- NLR_popgen %>%
   ggplot(aes(x=HV, y=Mutation.Probability.Score, fill=HV))+
   geom_violin(lwd=0.25)+
@@ -395,6 +403,8 @@ print(med_percent_increase[[1]])
 ## D: Positive selection sites plot:
 
 ```{r Fig6D}
+sites_internal_long %>% group_by(HV, model) %>% summarize(n=n())
+
 facet_sites_internal <- sites_internal_long %>%
   ggplot(aes(x=HV, y=value*100, fill=HV))+
    geom_beeswarm(size=0.4, aes(color=HV))+
