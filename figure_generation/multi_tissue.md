@@ -142,7 +142,9 @@ hv_rel <- rel_long %>% filter(HV != 'all_genes') %>%
   filter(tissue != 'callus, plant callus, not applicable' & 
            tissue != 'cell culture, root, not applicable') #remove synthetic tissue 
 hv_rel$HV <- factor(hv_rel$HV, levels=c('non-hv', 'hv'))
+```
 
+``` r
 #calculate p values, Benjamini-Hochberg correction for multiple testing
 sig_table <- compare_means(log2_TPM_tissue~HV, hv_rel,  method='wilcox.test', paired=FALSE, group.by='tissue', p.adjust.method='BH')
 
@@ -389,6 +391,14 @@ write.csv(hv_rel, file="./Source Data/Figure 4/4A-B/NLR_multi_tissue_expr.csv")
 order <- merge(sig_table, hv_rel, by='tissue') %>% arrange(dev_order)
 order$clean_tissue <- factor(order$clean_tissue, levels=c(order %>% pull(clean_tissue) %>% unique()))
 ```
+
+``` r
+#calculate n per group 
+sample_size <- order %>% group_by(tissue, HV) %>% summarize(n_gene=n())
+```
+
+    ## `summarise()` has grouped output by 'tissue'. You can override using the
+    ## `.groups` argument.
 
 ### Fig 4A: Split Violin Plots
 
@@ -892,7 +902,23 @@ methylation tissues.
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-    ## `summarise()` has grouped output by 'Chrom', 'Gene', 'meth_context', 'source_name'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'Chrom', 'Gene', 'meth_context'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'source_name'. You can override using the `.groups` argument.
+
+    ## # A tibble: 8 × 3
+    ## # Groups:   source_name [4]
+    ##   source_name        HV         n
+    ##   <chr>              <chr>  <int>
+    ## 1 Cauline leaf       hv        32
+    ## 2 Cauline leaf       non-hv    95
+    ## 3 Closed flower buds hv        32
+    ## 4 Closed flower buds non-hv    95
+    ## 5 Embryos            hv        32
+    ## 6 Embryos            non-hv    95
+    ## 7 Rosette leaf       hv        32
+    ## 8 Rosette leaf       non-hv    95
+
+AT1G58807, AT1G58848, AT1G59124, AT1G59218, and AT4G26090
 
 ## Figure 4C: split violin
 

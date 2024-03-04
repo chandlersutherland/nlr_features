@@ -77,7 +77,10 @@ hv_rel <- rel_long %>% filter(HV != 'all_genes') %>%
   filter(tissue != 'callus, plant callus, not applicable' & 
            tissue != 'cell culture, root, not applicable') #remove synthetic tissue 
 hv_rel$HV <- factor(hv_rel$HV, levels=c('non-hv', 'hv'))
+```
 
+
+```{r}
 #calculate p values, Benjamini-Hochberg correction for multiple testing
 sig_table <- compare_means(log2_TPM_tissue~HV, hv_rel,  method='wilcox.test', paired=FALSE, group.by='tissue', p.adjust.method='BH')
 
@@ -322,6 +325,13 @@ write.csv(hv_rel, file="./Source Data/Figure 4/4A-B/NLR_multi_tissue_expr.csv")
 #order by development order 
 order <- merge(sig_table, hv_rel, by='tissue') %>% arrange(dev_order)
 order$clean_tissue <- factor(order$clean_tissue, levels=c(order %>% pull(clean_tissue) %>% unique()))
+```
+
+
+```{r}
+#calculate n per group 
+sample_size <- order %>% group_by(tissue, HV) %>% summarize(n_gene=n())
+
 ```
 
 ### Fig 4A: Split Violin Plots 
@@ -625,7 +635,7 @@ all_gene_sub <- all_gene %>% subset(select=c('Gene', 'HV'))
 
 meth_ready <- merge(meth_by_tissue, metadata, by.x='sra', by.y='Run') %>% 
   filter(count > 0) %>%
-  group_by(Chrom, Gene, meth_context, source_name, count) %>% 
+  group_by(Chrom, Gene, meth_context, source_name) %>% 
   summarize(mean_meth_percentage=weighted.mean(mean_meth_percentage, count/sum(count), na.rm=F)) %>%
   #summarize(mean_meth_percentage=mean(mean_meth_percentage, na.rm=F)) %>% 
   merge(all_gene_sub, by='Gene')
@@ -635,7 +645,11 @@ CG <- meth_ready %>% filter(meth_context=='CpG') %>% filter(HV != 'all_genes')
 #done, save file to source data and Zenodo  
 write.csv(CG, file="./Source Data/Figure 4/4C/NLR_multi_tissue_meth.csv")
 write.csv(meth_ready, paste(zenodo_path, 'all_gene_multi_tissue_methylation.csv'))
+
+#check sample size
+CG %>% group_by(source_name, HV) %>% summarize(n=n())
 ```
+AT1G58807, AT1G58848, AT1G59124, AT1G59218, and AT4G26090
 
 ## Figure 4C: split violin 
 Perform and plot the pairwise comparison 
