@@ -16,7 +16,7 @@ Purpose: compare hv and non-hvNLR expression and methylation across multiple tis
 
 Intermediate processing steps are shown here, with all input files available for download from Zenodo. Figures can be recreated using just the numerical source data provided in `Source Data/Figure 4`.
 
-```{r }
+```{r}
 library(tidyverse)
 library(ggplot2)
 library(openxlsx)
@@ -649,7 +649,7 @@ write.csv(meth_ready, paste(zenodo_path, 'all_gene_multi_tissue_methylation.csv'
 #check sample size
 CG %>% group_by(source_name, HV) %>% summarize(n=n())
 ```
-AT1G58807, AT1G58848, AT1G59124, AT1G59218, and AT4G26090
+
 
 ## Figure 4C: split violin 
 Perform and plot the pairwise comparison 

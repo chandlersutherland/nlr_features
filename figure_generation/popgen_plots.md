@@ -120,7 +120,10 @@ sites_internal_long <- pos_sites %>% subset(select=c('Gene', 'HV', 'prop_fel_int
     values_to = "value") %>%
   mutate(model=recode(model, 
                       'prop_fel_int_95' = "Pervasive", 
-                      'prop_meme_internal_95' = 'Episodic'))
+                      'prop_meme_internal_95' = 'Episodic')) %>%
+  replace_na(list(value=0)) #all clades were tested, so NA in this case refers to no significant codons under selection. Replace with 0 to plot and calcualte statistics 
+
+
 #write to zenodo
 write.csv(sites_internal_long, paste(zenodo_path, 'positive_selection.csv', sep=""))
 
@@ -637,7 +640,9 @@ sites_internal_long %>% group_by(HV, model) %>% summarize(n=n())
 ``` r
 facet_sites_internal <- sites_internal_long %>%
   ggplot(aes(x=HV, y=value*100, fill=HV))+
-   geom_beeswarm(size=0.4, aes(color=HV))+
+   geom_beeswarm(size=0.4, 
+                 aes(color=HV), 
+                 corral='random')+
    geom_signif(comparisons=list(c('hv', 'non-hv')), 
                map_signif_level = TRUE, test=wilcox.test, textsize=8/.pt, y=c(15.5))+
     scale_color_manual(values=c('#00BFC4','#F8766D'))+
@@ -662,13 +667,45 @@ p_episodic <- compare_means(value~HV, sites_internal_long %>% filter(model=='Epi
 print(p_pervasive)
 ```
 
-    ## [1] 1.401354e-12
+    ## [1] 1.8402e-18
 
 ``` r
 print(p_episodic)
 ```
 
     ## [1] 4.558813e-18
+
+``` r
+sites_internal_long %>% filter(!is.na(value)) %>% group_by(HV, model) %>% summarize(n=n())
+```
+
+    ## # A tibble: 4 × 3
+    ## # Groups:   HV [2]
+    ##   HV     model         n
+    ##   <fct>  <chr>     <int>
+    ## 1 non-hv Episodic     97
+    ## 2 non-hv Pervasive    97
+    ## 3 hv     Episodic     35
+    ## 4 hv     Pervasive    35
+
+``` r
+sites_internal_long %>% arrange(value)
+```
+
+    ## # A tibble: 264 × 4
+    ##    Gene      HV     model     value
+    ##    <chr>     <fct>  <chr>     <dbl>
+    ##  1 AT5G51630 non-hv Pervasive     0
+    ##  2 AT5G46450 non-hv Pervasive     0
+    ##  3 AT5G17970 non-hv Pervasive     0
+    ##  4 AT5G17970 non-hv Episodic      0
+    ##  5 AT5G18360 non-hv Pervasive     0
+    ##  6 AT5G11250 non-hv Pervasive     0
+    ##  7 AT1G27180 non-hv Pervasive     0
+    ##  8 AT1G27170 non-hv Pervasive     0
+    ##  9 AT5G17890 non-hv Pervasive     0
+    ## 10 AT5G17890 non-hv Episodic      0
+    ## # ℹ 254 more rows
 
 Finally save
 

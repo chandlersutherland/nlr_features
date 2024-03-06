@@ -1,5 +1,2 @@
-# Figure 3B
-Phylogenetic tree of NLRs with annotation stored in the phyloXML format
-Interactive tree also available at iTOL: https://itol.embl.de/tree/239319680296251670020725
-
-.csv files include annotation files compatible with iTOL
+#EV Figure 3AB
+pi_d_genome.csv has the D and Pi values for all genes in the genome calculated by egglib on the 1001 genomes all sites VCF subset to ecotypes in the NLRome. NLRs in this file have the statistics calculated from protein alignments. Pi is per effective site. 
