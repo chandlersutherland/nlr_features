@@ -1,6 +1,6 @@
 High allelic diversity in Arabidopsis NLRs is associated with distinct genomic features
 ====
-[![Publication DOI](https://img.shields.io/badge/Publication-10.1101/2023.01.12.523861-green)]((https://doi.org/10.1038/s44319-024-00122-9))
+[![Static Badge](https://img.shields.io/badge/EMBO_Reports-2024?style=flat-square&link=https%3A%2F%2Fdoi.org%2F10.1038%2Fs44319-024-00122-9)](https://doi.org/10.1038/s44319-024-00122-9)
 [![Zenodo DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8411396.svg)](https://doi.org/10.5281/zenodo.8411396)
 
 This repository contains the code for the manuscript, "High intraspecies allelic diversity in Arabidopsis NLR immune receptors is associated with distinct genomic and epigenomic features," published in EMBO Reports. The repository is organized such that each directory contains one type of analysis described in the manuscript containing scripts run on UC Berkeley's High Performance Computing Cluster, any associated individual job scripts, and post processing. All figure generation and statistical tests are in the `figure_generation` directory. All files used as inputs for figure generation are available on Zenodo.  
